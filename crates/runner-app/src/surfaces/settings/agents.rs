@@ -58,6 +58,7 @@ struct UpdateAction {
 }
 
 pub(crate) struct AgentsPane {
+    wsl: Option<Entity<super::wsl::WslSettings>>,
     shell: WeakEntity<NativeRoot>,
     app_store: Entity<AppStore>,
     status: Option<RuntimeStatusResponse>,
@@ -157,7 +158,11 @@ impl AgentsPane {
             cx.notify();
         }));
 
+        let wsl = cfg!(windows).then(|| {
+            cx.new(|cx| super::wsl::WslSettings::new(app_store.read(cx).client.clone(), cx))
+        });
         Self {
+            wsl,
             shell,
             app_store,
             status: None,
@@ -178,6 +183,9 @@ impl AgentsPane {
     pub(crate) fn refresh(&mut self, cx: &mut Context<Self>) {
         if self.loading {
             return;
+        }
+        if let Some(wsl) = &self.wsl {
+            wsl.update(cx, |wsl, cx| wsl.refresh(cx));
         }
         self.loading = true;
         let core = self.app_store.read(cx).client.clone();
@@ -1114,6 +1122,7 @@ impl Render for AgentsPane {
                 crate::i18n::text("ui.discover_enable_and_override_built_in_agent_executables"),
             ))
             .child(sections)
+            .children(self.wsl.clone())
             .child(
                 div()
                     .text_size(theme::text_ui())

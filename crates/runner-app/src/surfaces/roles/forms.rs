@@ -63,6 +63,19 @@ impl NativeRoot {
     }
 
     pub(crate) fn refresh_role_form_runtimes(&mut self, cx: &mut Context<Self>) {
+        if self
+            .role_surfaces
+            .create
+            .as_ref()
+            .is_some_and(|f| !f.execution_target.is_native())
+            || self
+                .role_surfaces
+                .edit
+                .as_ref()
+                .is_some_and(|f| !f.execution_target.is_native())
+        {
+            return;
+        }
         let (selectable, agents_checking, agents_error) =
             crate::surfaces::start_chat::load_selectable_runtimes(self.core(cx), self.settings(cx));
         let catalog_loaded = agents_error.is_none();
@@ -220,6 +233,11 @@ impl NativeRoot {
         model_field.update(cx, |field, field_cx| {
             field.set_disabled(runtime.is_empty(), field_cx)
         });
+        let execution_select = self.new_role_execution_select(
+            runner_core::ExecutionTarget::Native,
+            super::logic::RoleFormKind::Create,
+            cx,
+        );
         let default_working_dir = self.settings(cx).default_working_dir.clone();
         let working_dir = cx.new(|input_cx| {
             working_dir_text_field(input_cx.focus_handle(), default_working_dir, "")
@@ -344,6 +362,9 @@ impl NativeRoot {
             handle_empty: true,
             handle_error: None,
             fields: RoleFormFields {
+                execution_target: runner_core::ExecutionTarget::Native,
+                execution_select,
+                execution_integrations: Vec::new(),
                 runtimes,
                 runtime,
                 display_name,
@@ -372,6 +393,7 @@ impl NativeRoot {
         });
         self.sync_create_role_efforts(cx);
         focus.focus(window, cx);
+        self.load_role_execution_targets(cx);
         cx.notify();
     }
 
@@ -543,10 +565,19 @@ impl NativeRoot {
         for input in [&display_name, &args, &model, &working_dir, &system_prompt] {
             subscriptions.push(cx.observe(input, |_, _, cx| cx.notify()));
         }
+        let execution_target = role.execution_target.clone();
+        let execution_select = self.new_role_execution_select(
+            execution_target.clone(),
+            super::logic::RoleFormKind::Edit,
+            cx,
+        );
         self.role_surfaces.edit = Some(RoleEditForm {
             role,
             permission_mode,
             fields: RoleFormFields {
+                execution_target,
+                execution_select,
+                execution_integrations: Vec::new(),
                 runtimes,
                 runtime: resolution.runtime,
                 display_name: display_name.clone(),
@@ -575,6 +606,7 @@ impl NativeRoot {
         });
         self.sync_role_edit_efforts(cx);
         display_name.read(cx).focus_handle().focus(window, cx);
+        self.load_role_execution_targets(cx);
         cx.notify();
     }
 }

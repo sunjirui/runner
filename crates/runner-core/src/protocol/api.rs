@@ -10,6 +10,10 @@ use std::path::PathBuf;
 macro_rules! daemon_api {
     ($consumer:ident) => { $consumer! {
 
+        wsl_status() -> WslStatus [false] => |core: &crate::AppCore| { crate::wsl::status(core) };
+        wsl_enable_distribution(distro: String => String = { distro }, user: Option<String> => Option<String> = { user }) -> WslIntegration [false] => |core: &crate::AppCore, distro: String, user: Option<String>| { crate::wsl::enable_distribution(core, distro, user) };
+        wsl_enable(target: ExecutionTarget => ExecutionTarget = { target }) -> WslIntegration [false] => |core: &crate::AppCore, target: ExecutionTarget| { crate::wsl::enable(core, target) };
+        wsl_disable(target: ExecutionTarget => ExecutionTarget = { target }) -> () [false] => |core: &crate::AppCore, target: ExecutionTarget| { crate::wsl::disable(core, target) };
         app_version() -> String [true] => |core: &crate::AppCore| { Ok(core.app_version.clone()) };
         hook_report(report: HookReport => HookReport = { report }) -> () [true] => |_core: &crate::AppCore, _report: HookReport| { Err(crate::error::Error::msg("hook admission requires a reporter connection")) };
         mission_list(crew_id: Option<String> => Option<String> = { crew_id }) -> Vec<Mission> [false] => |core: &crate::AppCore, crew_id: Option<String>| { crate::ops::mission::mission_list(core, crew_id) };
@@ -20,12 +24,14 @@ macro_rules! daemon_api {
         mission_unarchive_impl(id: String => String = { id }) -> Mission [false] => |core: &crate::AppCore, id: String| { crate::daemon::block_on(crate::ops::mission::mission_unarchive_impl(core, id)).map(|output| { core.events.emit("mission/changed", &()); output }) };
         mission_set_project(mission_id: String => String = { mission_id }, project_id: Option<String> => Option<String> = { project_id }) -> Mission [false] => |core: &crate::AppCore, mission_id: String, project_id: Option<String>| { crate::ops::mission::mission_set_project(core, mission_id, project_id) };
         project_get(id: &str => String = { id.to_owned() }) -> ProjectRow [false] => |core: &crate::AppCore, id: String| { { let conn = core.db.get()?; crate::ops::project::get(&conn, &id) } };
+        project_create_target(name: String => String = { name }, cwd: String => String = { cwd }, target: ExecutionTarget => ExecutionTarget = { target }) -> ProjectRow [false] => |core: &crate::AppCore, name: String, cwd: String, target: ExecutionTarget| { crate::ops::project::project_create_target(core, name, cwd, target) };
         project_create_checked(name: String => String = { name }, cwd: String => String = { cwd }) -> ProjectRow [false] => |core: &crate::AppCore, name: String, cwd: String| { crate::ops::project::project_create_checked(core, name, cwd) };
         project_delete_checked(id: String => String = { id }, force: bool => bool = { force }) -> ProjectDeleteOutcome [false] => |core: &crate::AppCore, id: String, force: bool| { crate::daemon::block_on(crate::ops::project::project_delete_checked(core, id, force)) };
         session_list_with_activity() -> Vec<serde_json::Value> [false] => |core: &crate::AppCore| { crate::ops::session::session_list_with_activity(core) };
         session_get_with_status(session_id: &str => String = { session_id.to_owned() }) -> serde_json::Value [false] => |core: &crate::AppCore, session_id: String| { crate::ops::session::session_get_with_status(core, &session_id) };
         session_stop(session_id: &str => String = { session_id.to_owned() }) -> () [false] => |core: &crate::AppCore, session_id: String| { crate::ops::session::session_stop(core, &session_id) };
         session_archive_direct(session_id: &str => String = { session_id.to_owned() }) -> () [false] => |core: &crate::AppCore, session_id: String| { crate::ops::session::session_archive_direct(core, &session_id) };
+        session_start_chat_in_target(args: StartDirectSessionArgs => StartDirectSessionArgs = { args }, scope: ProjectScope => ProjectScope = { scope }, initial_size: Option<(u16, u16)> => Option<(u16, u16)> = { initial_size }) -> StartDirectSessionOutput [false] => |core: &crate::AppCore, args: StartDirectSessionArgs, scope: ProjectScope, initial_size: Option<(u16, u16)>| { crate::ops::session::session_start_chat_in_target(core, args, scope, initial_size) };
         session_start_chat(args: StartDirectSessionArgs => StartDirectSessionArgs = { args }) -> StartDirectSessionOutput [false] => |core: &crate::AppCore, args: StartDirectSessionArgs| { crate::ops::session::session_start_chat(core, args) };
 
         session_live_ids() -> Vec<String> [true] => |core: &crate::AppCore| { Ok(core.sessions.live_session_ids()) };

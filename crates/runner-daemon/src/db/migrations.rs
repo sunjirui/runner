@@ -199,6 +199,11 @@ pub(super) const MIGRATIONS: &[(i64, &str, bool)] = &[
         include_str!("../../migrations/0028_optional_mission_crew_restrict_deletes.sql"),
         true,
     ),
+    (
+        29,
+        include_str!("../../migrations/0029_execution_targets.sql"),
+        false,
+    ),
 ];
 
 pub(super) fn run_migrations(conn: &mut Connection) -> Result<()> {
@@ -544,7 +549,31 @@ fn backfill_0026_launch_definitions(tx: &rusqlite::Transaction) -> rusqlite::Res
         let role = row
             .role_id
             .as_deref()
-            .map(|id| crate::repo::role::get(tx, id))
+            .map(|id| {
+                use rusqlite::OptionalExtension;
+                // This conversion runs before 0029 adds target identity.
+                let columns = crate::repo::role::COLUMNS
+                    .iter()
+                    .map(|column| {
+                        if *column == "execution_target_json" {
+                            r#"'{"kind":"native"}' AS execution_target_json"#
+                        } else {
+                            column
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                tx.query_row(
+                    &format!("SELECT {columns} FROM roles WHERE id = ?1"),
+                    [id],
+                    |row| {
+                        serde_rusqlite::from_row::<crate::repo::role::RoleRow>(row)
+                            .map(crate::model::Role::from)
+                            .map_err(crate::repo::de_err)
+                    },
+                )
+                .optional()
+            })
             .transpose()?
             .flatten();
         if row.role_id.is_some() && role.is_none() {

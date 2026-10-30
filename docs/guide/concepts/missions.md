@@ -10,6 +10,11 @@ With **No crew**, the mission starts without sessions or a lead. Add a role from
 
 The mission's working directory is shared by its members when supplied. Runner does not make branches, worktrees or copies of your repository. Set up any isolation you need before launch and describe it in the goal.
 
+On Windows, **Start a mission** can choose Native or an enabled WSL2 environment.
+All members use that environment, including roles added after launch. Without an
+override or a project environment, a crew's role defaults must agree. The mission
+keeps its target for stop/resume and fresh restarts.
+
 ## Feed and terminals
 
 The feed records messages, questions, answers and lifecycle events in a persistent event log. A member can address another member by handle, post to the crew, or ask the person for a decision. Runner delivers coordination messages to the relevant agents; their own terminals retain the detailed work and output.

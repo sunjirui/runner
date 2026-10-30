@@ -11,6 +11,8 @@ pub struct MissionReadCursor {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct StartMissionInput {
+    #[serde(default)]
+    pub execution_target: Option<crate::ExecutionTarget>,
     pub crew_id: Option<String>,
     /// Optional project membership. Its cwd is used when cwd is omitted.
     #[serde(default)]
@@ -32,6 +34,8 @@ pub struct StartMissionInput {
 /// none is named.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MissionStart {
+    #[serde(default)]
+    pub execution_target: Option<crate::ExecutionTarget>,
     pub crew_id: Option<String>,
     pub scope: ProjectScope,
     pub title: String,
@@ -42,6 +46,7 @@ pub struct MissionStart {
 impl From<StartMissionInput> for MissionStart {
     fn from(input: StartMissionInput) -> Self {
         Self {
+            execution_target: input.execution_target,
             crew_id: input.crew_id,
             scope: ProjectScope::or_infer(input.project_id),
             title: input.title,

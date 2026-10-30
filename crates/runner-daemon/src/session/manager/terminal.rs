@@ -313,12 +313,31 @@ pub fn link_cwd(core: &crate::AppCore, id: &str) -> Result<Option<PathBuf>> {
         return Ok(None);
     };
     if let Some(cwd) = row.cwd.filter(|cwd| !cwd.trim().is_empty()) {
-        return Ok(Some(PathBuf::from(cwd)));
+        return row
+            .launch_definition
+            .as_ref()
+            .map(|definition| {
+                definition
+                    .execution_target
+                    .host_path(&cwd)
+                    .map(PathBuf::from)
+                    .map_err(Error::msg)
+            })
+            .unwrap_or_else(|| Ok(PathBuf::from(cwd)))
+            .map(Some);
     }
     let Some(project_id) = row.project_id else {
         return Ok(None);
     };
-    Ok(crate::repo::project::get(&conn, &project_id)?.map(|project| PathBuf::from(project.cwd)))
+    crate::repo::project::get(&conn, &project_id)?
+        .map(|project| {
+            project
+                .execution_target
+                .host_path(&project.cwd)
+                .map(PathBuf::from)
+                .map_err(Error::msg)
+        })
+        .transpose()
 }
 pub fn configure(core: &crate::AppCore, id: &str, scrollback: usize, shape: &str) -> Result<()> {
     core.sessions

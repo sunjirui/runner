@@ -1,6 +1,7 @@
 #[cfg(test)]
 use super::status::AgentObservation;
 use crate::session::status::{Activity, AgentStatus, ObservationSource, TurnOutcome};
+pub(crate) use spawn::run_headless_fork;
 // Per-role session manager.
 //
 // One `Session` = one child process attached to an in-process PTY via
@@ -1966,18 +1967,6 @@ impl SessionManager {
     }
 }
 
-fn resolve_spawn_cwd(explicit: Option<&str>, role_default: Option<&str>) -> Option<String> {
-    [explicit, role_default]
-        .into_iter()
-        .flatten()
-        .find(|cwd| !cwd.trim().is_empty())
-        .map(str::to_owned)
-        .or_else(|| {
-            runner_core::app_paths::home_dir()
-                .and_then(|home| home.into_os_string().into_string().ok())
-        })
-}
-
 /// Resolve the role config a spawn should actually use (feature 41).
 /// Layering is role template, then runtime override, then model/effort
 /// overrides. `None` means the role row applies unchanged; a runtime
@@ -2050,6 +2039,7 @@ pub(crate) fn runtime_direct_role(
             .apply(&[], crate::ops::role::default_permission_mode())
     };
     Ok(Role {
+        execution_target: Default::default(),
         id: format!("runtime:{runtime}"),
         handle: runtime.to_string(),
         display_name: registry

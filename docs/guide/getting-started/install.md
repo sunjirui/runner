@@ -21,11 +21,43 @@ On macOS, open the disk image, drag Runner into Applications, and launch it. On 
 2. Open your usual terminal and run the agent. Complete its sign-in or provider configuration and confirm it can answer a prompt.
 3. Open **Settings → Agents** in Runner. Confirm the agent is enabled and that Runner shows its executable and version. Use **Refresh** after installing a CLI; use **Browse** to select its executable if it is outside `PATH`.
 
-On Windows, agents run natively without WSL. Claude Code and pi's bash tool need Git for Windows; npm-installed CLIs also need Node.js. PowerShell 7 is optional.
+On Windows, agents run natively by default. Claude Code and pi's bash tool need Git for Windows; npm-installed CLIs also need Node.js. PowerShell 7 is optional.
 
 Runner does not install the agent CLIs or supply subscriptions. Where supported, **Settings → Agents** offers **Update** when a newer CLI version is available. The update runs the agent's own updater in a terminal.
 
 The dot on the Usage popover's **Agent settings** gear indicates an agent CLI update. Opening Usage or **Settings → Agents** refreshes the installed CLI versions, so the dot clears once every enabled agent is up to date. Updating Runner does not update these separately installed CLIs.
+
+## Use agents in WSL2 on Windows
+
+Install and sign in to your agent CLIs inside a WSL2 distribution. In Windows Runner,
+open **Settings → Agents → WSL2**, select a distribution and enable integration.
+Leave the Linux user field blank to use the distribution's default user, or enter
+another existing Linux user. WSL1 distributions must be upgraded before enabling.
+
+Runner installs its Linux CLI for that distribution and user. If `runner` already
+names a different program in `~/.local/bin`, move that command first; Runner will
+report the conflict. Add `~/.local/bin` to your Linux shell's `PATH` if needed:
+
+```sh
+export PATH="$HOME/.local/bin:$PATH"
+runner status
+```
+
+Development builds install `runner-dev` instead of `runner`. Windows Runner remains
+the owner of your chats, missions and data. WSL interop must be enabled so the Linux
+command can reach the Windows application; it does not start a Linux daemon.
+
+Choose the enabled environment in a role, **Start a chat**, or **Start a mission**.
+Use a Linux working directory such as `/home/you/src/my-app`; Windows paths and WSL
+UNC paths are converted in the selected distribution. Agent sign-ins, configuration
+and tools come from the Linux user's environment. The native Windows agent list
+continues to describe agents installed on Windows.
+
+A mission uses one environment for all its members, including workers added later.
+Saved sessions keep their environment when resumed or forked. Stop that environment's
+sessions before disabling integration. After a Runner update, starting WSL work
+refreshes the installed CLI; use **Enable / refresh** in Settings if an ordinary
+Linux terminal reports a version mismatch or a missing bridge.
 
 ## Make the `runner` command available
 

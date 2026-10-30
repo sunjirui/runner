@@ -356,6 +356,7 @@ pub fn runtime_update_run(
     command: runner_core::protocol::terminal::RuntimeUpdateCommand,
 ) -> Result<()> {
     let spec = crate::session::runtime::SpawnSpec {
+        execution_target: Default::default(),
         agent_runtime: None,
         pending_turn: None,
         session_id: command.session_id,

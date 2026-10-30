@@ -312,6 +312,7 @@ fn mission_status_transition_appends_once_and_matches_incremental_status() {
             .unwrap()
     };
     let mission = Mission {
+        execution_target: Default::default(),
         id: fresh_mission_id,
         ..mission_base
     };
@@ -398,6 +399,7 @@ fn mission_typing_stays_idle_until_submit() {
             .unwrap()
     };
     let mission = Mission {
+        execution_target: Default::default(),
         id: fresh_mission_id,
         ..mission_base
     };

@@ -110,6 +110,7 @@ fn custom_claude_settings_do_not_prepare_a_status_watcher() {
         std::fs::create_dir_all(stale_rekey.parent().unwrap()).unwrap();
         std::fs::write(&stale_rekey, "stale report").unwrap();
         let mut spec = SpawnSpec {
+            execution_target: Default::default(),
             agent_runtime: None,
             pending_turn: None,
             session_id: "custom-settings".into(),
@@ -123,15 +124,17 @@ fn custom_claude_settings_do_not_prepare_a_status_watcher() {
             shell_path: None,
             initial_size: Some((80, 24)),
         };
-        mgr_with_fake(None, fake_runtime()).apply_runtime_args(
-            &mut spec,
-            &role,
-            &crate::runtimes::adapter(Runtime::ClaudeCode).resume_plan(None),
-            root.path(),
-            None,
-            None,
-            None,
-        );
+        mgr_with_fake(None, fake_runtime())
+            .apply_runtime_args(
+                &mut spec,
+                &role,
+                &crate::runtimes::adapter(Runtime::ClaudeCode).resume_plan(None),
+                root.path(),
+                None,
+                None,
+                None,
+            )
+            .unwrap();
         assert!(!spec.env.contains_key("RUNNER_CLAUDE_STATUS_PATH"));
         assert!(!spec
             .env
@@ -146,6 +149,7 @@ fn spawn_argv_injects_runtime_settings_for_fresh_and_resume() {
         let mut role = role("/bin/cat", &["--debug"]);
         role.runtime = runtime.into();
         let mut spec = SpawnSpec {
+            execution_target: Default::default(),
             agent_runtime: None,
             pending_turn: None,
             session_id: "settings-argv".into(),
@@ -159,15 +163,17 @@ fn spawn_argv_injects_runtime_settings_for_fresh_and_resume() {
             shell_path: None,
             initial_size: Some((80, 24)),
         };
-        mgr_with_fake(None, fake_runtime()).apply_runtime_args(
-            &mut spec,
-            &role,
-            &plan,
-            &fixture_tmp_dir().join("runner-app-data"),
-            None,
-            Some("first turn"),
-            None,
-        );
+        mgr_with_fake(None, fake_runtime())
+            .apply_runtime_args(
+                &mut spec,
+                &role,
+                &plan,
+                &fixture_tmp_dir().join("runner-app-data"),
+                None,
+                Some("first turn"),
+                None,
+            )
+            .unwrap();
         if runtime == "claude-code" {
             let generation = spec.env[runner_core::protocol::hook::GENERATION_ENV].clone();
             assert!(uuid::Uuid::parse_str(&generation).is_ok());

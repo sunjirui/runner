@@ -942,12 +942,23 @@ impl NativeRoot {
                     }))
                     .into_any_element()
             });
+        let execution_label = focused_entry
+            .as_ref()
+            .filter(|entry| !entry.execution_target.is_native())
+            .map(|entry| {
+                div()
+                    .text_xs()
+                    .text_color(theme::muted())
+                    .child(entry.execution_target.label())
+                    .into_any_element()
+            });
         let title_actions = (!session_ids.is_empty() && !focused_secondary)
             .then(|| self.chat_action_menu.clone().into_any_element())
             .into_iter()
             .chain(control)
             .chain(fork_action)
-            .chain(single_status);
+            .chain(single_status)
+            .chain(execution_label);
         let keymap_overrides = self.settings(cx).keymap_overrides.clone();
         // A single-pane tab has no identity line, so the header carries its
         // split menu; once split, every identity line carries its own.
@@ -3717,6 +3728,7 @@ mod tests {
 
     fn direct_session(runtime: &str, native_fork: bool, forkable: bool) -> DirectSessionEntry {
         DirectSessionEntry {
+            execution_target: Default::default(),
             session_id: format!("{runtime}-session"),
             project_id: None,
             role_id: None,
@@ -3839,6 +3851,7 @@ mod tests {
 
     fn panel_role() -> runner_core::protocol::model::Role {
         runner_core::protocol::model::Role {
+            execution_target: Default::default(),
             id: "role-architect".into(),
             handle: "architect".into(),
             display_name: "Architect".into(),

@@ -246,6 +246,7 @@ impl Fixture {
 
 fn role(handle: &str, runtime: &str) -> Role {
     Role {
+        execution_target: Default::default(),
         id: format!("rid-{handle}"),
         handle: handle.into(),
         display_name: handle.to_uppercase(),

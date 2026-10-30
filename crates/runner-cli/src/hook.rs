@@ -147,9 +147,20 @@ pub async fn deliver(endpoint: &Path, report: HookReport) -> io::Result<()> {
     if !report.valid() || serde_json::to_vec(&report)?.len() > MAX_ENVELOPE_BYTES {
         return Err(wire::invalid("invalid hook envelope"));
     }
-    tokio::time::timeout(DEADLINE, async {
+    let deadline = if runner_core::wsl_bridge::integrated() {
+        std::time::Duration::from_secs(2)
+    } else {
+        DEADLINE
+    };
+    tokio::time::timeout(deadline, async {
         #[cfg(unix)]
-        let mut stream = tokio::net::UnixStream::connect(endpoint).await?;
+        let mut stream = if runner_core::wsl_bridge::integrated() {
+            let stream = runner_core::wsl_bridge::open_for("--wsl-hook")?;
+            stream.set_nonblocking(true)?;
+            tokio::net::UnixStream::from_std(stream)?
+        } else {
+            tokio::net::UnixStream::connect(endpoint).await?
+        };
         #[cfg(windows)]
         let mut stream = loop {
             match tokio::net::windows::named_pipe::ClientOptions::new().open(endpoint) {

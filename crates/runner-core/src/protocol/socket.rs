@@ -17,6 +17,27 @@ pub const FORK_REQUEST_TIMEOUT: Duration =
 fn request_timeout(request: &Request, timeout: Duration) -> Duration {
     match request {
         Request::session_fork { .. } => timeout.max(FORK_REQUEST_TIMEOUT),
+        Request::wsl_enable { .. }
+        | Request::wsl_enable_distribution { .. }
+        | Request::wsl_disable { .. }
+        | Request::wsl_status { .. }
+        | Request::session_start_chat_in_target { .. } => timeout.max(Duration::from_secs(120)),
+        _ if cfg!(windows)
+            && matches!(
+                request,
+                Request::session_start_chat { .. }
+                    | Request::session_start_direct { .. }
+                    | Request::session_start_direct_with_speed { .. }
+                    | Request::session_start_runtime_with_speed { .. }
+                    | Request::session_resume { .. }
+                    | Request::session_resume_on_launch { .. }
+                    | Request::session_restart { .. }
+                    | Request::mission_start_impl_with_size { .. }
+                    | Request::mission_add_role { .. }
+            ) =>
+        {
+            timeout.max(Duration::from_secs(120))
+        }
         _ => timeout,
     }
 }
@@ -57,6 +78,10 @@ fn io_error(error: io::Error) -> ConnectError {
 }
 
 fn open(endpoint: &IpcEndpoint, deadline: Instant) -> io::Result<Stream> {
+    #[cfg(unix)]
+    if crate::wsl_bridge::integrated() {
+        return crate::wsl_bridge::open();
+    }
     #[cfg(unix)]
     {
         use std::os::fd::{AsRawFd, FromRawFd};
@@ -119,6 +144,70 @@ fn open(endpoint: &IpcEndpoint, deadline: Instant) -> io::Result<Stream> {
             }
             Err(error) => return Err(error),
         }
+    }
+}
+
+/// Forward the existing protocol without interpreting CLI arguments or exposing
+/// a general Windows command execution entry point. EOF cancels the pipe reader.
+#[cfg(windows)]
+pub fn relay_stdio(
+    endpoint: &IpcEndpoint,
+    target: Option<crate::ExecutionTarget>,
+) -> io::Result<()> {
+    use std::io::Write;
+    let mut stream = open(endpoint, Instant::now() + Duration::from_millis(500))?;
+    let mut writer = stream.try_clone()?;
+    let interrupt = stream.try_clone()?;
+    std::thread::spawn(move || {
+        let mut stdin = io::stdin().lock();
+        while let Ok(mut frame) = Frame::read(&mut stdin) {
+            if let Some(target) = &target {
+                if frame.kind == wire::REQUEST {
+                    if let Ok(mut call) = frame.decode::<wire::Call>() {
+                        if let Request::hook_report { report } = &mut call.request {
+                            for key in ["transcript_path", "cwd"] {
+                                if let Some(path) =
+                                    report.payload.get(key).and_then(serde_json::Value::as_str)
+                                {
+                                    let Ok(path) = target.host_path(path) else {
+                                        return interrupt.interrupt();
+                                    };
+                                    report.payload[key] = serde_json::Value::String(path);
+                                }
+                            }
+                            let Ok(encoded) = Frame::json(wire::REQUEST, &call) else {
+                                return interrupt.interrupt();
+                            };
+                            frame = encoded;
+                        }
+                    }
+                }
+            }
+            if frame.write(&mut writer).is_err() {
+                break;
+            }
+        }
+        interrupt.interrupt();
+    });
+    let stdout = io::stdout();
+    let mut stdout = stdout.lock();
+    loop {
+        let frame = match Frame::read(&mut stream) {
+            Ok(frame) => frame,
+            Err(error)
+                if matches!(
+                    error.kind(),
+                    io::ErrorKind::UnexpectedEof
+                        | io::ErrorKind::ConnectionAborted
+                        | io::ErrorKind::BrokenPipe
+                ) =>
+            {
+                return Ok(())
+            }
+            Err(error) => return Err(error),
+        };
+        frame.write(&mut stdout)?;
+        stdout.flush()?;
     }
 }
 
@@ -218,7 +307,12 @@ impl SocketTransport {
         hello: wire::Hello,
         timeout: Duration,
     ) -> Result<Arc<Self>, ConnectError> {
-        let deadline = Instant::now() + Duration::from_millis(500);
+        let deadline = Instant::now()
+            + if crate::wsl_bridge::integrated() {
+                crate::daemon_process::DAEMON_START_TIMEOUT + Duration::from_secs(5)
+            } else {
+                Duration::from_millis(500)
+            };
         let mut stream = open(endpoint, deadline).map_err(io_error)?;
         #[cfg(windows)]
         stream.set_timeout(Some(deadline.saturating_duration_since(Instant::now())));

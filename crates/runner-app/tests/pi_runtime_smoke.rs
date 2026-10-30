@@ -174,6 +174,7 @@ fn pi_real_binary_direct_mission_and_relaunch_resume() {
     let role = role::create(
         &db.get().unwrap(),
         role::CreateRoleInput {
+            execution_target: Default::default(),
             handle: "pi-smoke".into(),
             display_name: "pi smoke".into(),
             runtime: Runtime::Pi,
@@ -286,6 +287,7 @@ fn pi_real_binary_direct_mission_and_relaunch_resume() {
     .unwrap()
     .slot;
     let mission = Mission {
+        execution_target: Default::default(),
         id: "PISMOKEMISSION".into(),
         crew_id: Some(crew.id),
         project_id: None,

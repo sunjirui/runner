@@ -16,8 +16,9 @@ use serde::{Deserialize, Serialize};
 /// Everything `spawn` needs that doesn't already live on a `Session`
 /// row. The runtime never reads the DB — callers (mission/session
 /// commands) gather the inputs and hand them in.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SpawnSpec {
+    pub execution_target: runner_core::ExecutionTarget,
     pub agent_runtime: Option<crate::model::Runtime>,
     /// Whether the adapter expects an automatic first turn, including a
     /// first turn delivered by paste. None uses the generic output fallback.

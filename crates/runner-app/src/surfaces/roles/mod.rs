@@ -2,6 +2,7 @@ mod create;
 mod delete;
 mod detail;
 mod edit;
+mod execution;
 mod forms;
 mod list;
 pub(crate) mod logic;
@@ -74,6 +75,9 @@ struct RoleEditForm {
 }
 
 struct RoleFormFields {
+    execution_target: runner_core::ExecutionTarget,
+    execution_select: Entity<StyledSelect>,
+    execution_integrations: Vec<runner_core::execution_target::WslIntegration>,
     runtimes: Vec<RuntimeCatalogEntry>,
     runtime: String,
     display_name: Entity<TextField>,

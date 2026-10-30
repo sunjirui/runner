@@ -109,6 +109,7 @@ fn only_terminal_shells_get_the_osc7_integration() {
     let data = tempfile::tempdir().unwrap();
     let compose = |role: &Role, mission: bool| {
         let mut spec = SpawnSpec {
+            execution_target: Default::default(),
             session_id: "osc7-gate".into(),
             command: role.command.clone(),
             args: role.args.clone(),
@@ -116,15 +117,17 @@ fn only_terminal_shells_get_the_osc7_integration() {
             initial_size: Some((80, 24)),
             ..SpawnSpec::default()
         };
-        mgr_with_fake(None, fake_runtime()).apply_runtime_args(
-            &mut spec,
-            role,
-            &crate::runtimes::for_key(&role.runtime).resume_plan(None),
-            data.path(),
-            None,
-            None,
-            None,
-        );
+        mgr_with_fake(None, fake_runtime())
+            .apply_runtime_args(
+                &mut spec,
+                role,
+                &crate::runtimes::for_key(&role.runtime).resume_plan(None),
+                data.path(),
+                None,
+                None,
+                None,
+            )
+            .unwrap();
         spec
     };
     let integrated = |spec: &SpawnSpec| {

@@ -58,6 +58,8 @@ pub struct Role {
     pub handle: String,
     pub display_name: String,
     pub runtime: String,
+    #[serde(default)]
+    pub execution_target: crate::ExecutionTarget,
     pub command: String,
     pub args: Vec<String>,
     pub working_dir: Option<String>,
@@ -131,6 +133,8 @@ pub enum MissionStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Mission {
+    #[serde(default)]
+    pub execution_target: crate::ExecutionTarget,
     pub id: String,
     pub crew_id: Option<String>,
     pub project_id: Option<String>,

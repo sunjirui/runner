@@ -59,6 +59,7 @@ fn hook_mapping_ignores_child_keys_stale_generations_and_session_end_stops() {
     let mut watcher = Watcher::new(
         receiver,
         &SpawnSpec {
+            execution_target: Default::default(),
             args: strings(&["-s", &key]),
             ..Default::default()
         },
@@ -151,6 +152,7 @@ fn delayed_turn_reports_preserve_the_current_turn_and_approval() {
     let mut watcher = Watcher::new(
         receiver,
         &SpawnSpec {
+            execution_target: Default::default(),
             args: strings(&["-s", &key]),
             ..Default::default()
         },

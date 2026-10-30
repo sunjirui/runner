@@ -81,6 +81,7 @@ fn composer_tracks_keyboard_and_mouse_caret_moves_and_completes_without_resettin
                     added_at: Utc::now(),
                 },
                 role: runner_core::protocol::model::Role {
+                    execution_target: Default::default(),
                     id: "role".into(),
                     handle: "reviewer".into(),
                     display_name: "Reviewer".into(),
@@ -920,6 +921,7 @@ fn cached_mission_header_tabs_and_feed_span_the_content_column() {
                     added_at: Utc::now(),
                 },
                 role: runner_core::protocol::model::Role {
+                    execution_target: Default::default(),
                     id: "role".into(),
                     handle: "coder".into(),
                     display_name: "Coder".into(),

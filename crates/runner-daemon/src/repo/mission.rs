@@ -14,6 +14,11 @@ use super::{de_err, insert_sql, select_list, ser_err};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MissionRow {
+    #[serde(
+        rename = "execution_target_json",
+        with = "crate::repo::serde::json_text"
+    )]
+    pub execution_target: runner_core::ExecutionTarget,
     pub id: String,
     pub crew_id: Option<String>,
     pub project_id: Option<String>,
@@ -39,6 +44,7 @@ pub const COLUMNS: &[&str] = &[
     "status",
     "goal_override",
     "cwd",
+    "execution_target_json",
     "started_at",
     "stopped_at",
     "pinned_at",
@@ -54,6 +60,7 @@ impl From<MissionRow> for Mission {
             title: r.title,
             status: r.status,
             goal_override: r.goal_override,
+            execution_target: r.execution_target,
             cwd: r.cwd,
             started_at: r.started_at,
             stopped_at: r.stopped_at,
@@ -72,6 +79,7 @@ impl From<&Mission> for MissionRow {
             title: m.title.clone(),
             status: m.status,
             goal_override: m.goal_override.clone(),
+            execution_target: m.execution_target.clone(),
             cwd: m.cwd.clone(),
             started_at: m.started_at,
             stopped_at: m.stopped_at,
@@ -295,6 +303,7 @@ mod tests {
     fn full_row() -> MissionRow {
         let now = Utc::now();
         MissionRow {
+            execution_target: Default::default(),
             id: "m-full".into(),
             crew_id: Some("c1".into()),
             project_id: None,
@@ -311,6 +320,7 @@ mod tests {
 
     fn minimal_row() -> MissionRow {
         MissionRow {
+            execution_target: Default::default(),
             id: "m-min".into(),
             crew_id: Some("c1".into()),
             project_id: None,

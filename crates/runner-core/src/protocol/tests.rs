@@ -101,6 +101,7 @@ record!(CreateCrewInput {
     system_prompt_addendum
 });
 record!(CreateRoleInput {
+    execution_target,
     handle,
     display_name,
     runtime,
@@ -149,6 +150,7 @@ record!(CrewMembership {
     added_at
 });
 record!(DirectSessionEntry {
+    execution_target,
     session_id,
     project_id,
     role_id,
@@ -232,6 +234,7 @@ record!(McpServerClientEntry {
 variant!(McpServerDefinition => Self::Stdio { command: Sample::sample(), args: Sample::sample(), env: Sample::sample() });
 record!(McpServerEntry { name, clients });
 record!(Mission {
+    execution_target,
     id,
     crew_id,
     project_id,
@@ -307,6 +310,7 @@ record!(MissionWarningSnapshot {
     payload
 });
 record!(MissionStart {
+    execution_target,
     crew_id,
     scope,
     title,
@@ -364,6 +368,7 @@ record!(ProjectDeleteOutcome {
     archived_session_ids
 });
 record!(ProjectRow {
+    execution_target,
     id,
     name,
     cwd,
@@ -378,6 +383,7 @@ record!(ResumeMissionOutput {
     sessions
 });
 record!(Role {
+    execution_target,
     id,
     handle,
     display_name,
@@ -523,6 +529,7 @@ record!(StartDirectSessionOutput {
     cwd
 });
 record!(StartDirectSessionArgs {
+    execution_target,
     role_id,
     runtime,
     model,
@@ -540,6 +547,7 @@ record!(UpdateCrewInput {
     system_prompt_addendum
 });
 record!(UpdateRoleInput {
+    execution_target,
     display_name,
     runtime,
     command,
@@ -679,3 +687,30 @@ impl Sample for TerminalPalette {
         }
     }
 }
+
+impl Sample for crate::ExecutionTarget {
+    fn sample() -> Self {
+        crate::ExecutionTarget::Wsl {
+            distro: "Ubuntu".into(),
+            user: "tester".into(),
+        }
+    }
+}
+
+record!(WslDistribution {
+    name,
+    version,
+    state,
+    default
+});
+record!(WslIntegration {
+    target,
+    home,
+    path,
+    agents,
+    build
+});
+record!(WslStatus {
+    distributions,
+    integrations
+});

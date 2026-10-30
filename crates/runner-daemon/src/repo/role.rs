@@ -27,6 +27,11 @@ pub struct RoleRow {
     pub handle: String,
     pub display_name: String,
     pub runtime: String,
+    #[serde(
+        rename = "execution_target_json",
+        with = "crate::repo::serde::json_text"
+    )]
+    pub execution_target: runner_core::ExecutionTarget,
     pub command: String,
     #[serde(with = "crate::repo::serde::json_text_opt")]
     pub args_json: Option<Vec<String>>,
@@ -53,6 +58,7 @@ pub const COLUMNS: &[&str] = &[
     "display_name",
     "runtime",
     "command",
+    "execution_target_json",
     "args_json",
     "working_dir",
     "system_prompt",
@@ -71,6 +77,7 @@ const UPDATE_FIELDS: &[&str] = &[
     "display_name",
     "runtime",
     "command",
+    "execution_target_json",
     "args_json",
     "working_dir",
     "system_prompt",
@@ -89,6 +96,7 @@ impl From<RoleRow> for Role {
             handle: r.handle,
             display_name: r.display_name,
             runtime: r.runtime,
+            execution_target: r.execution_target,
             command: r.command,
             args: r.args_json.unwrap_or_default(),
             working_dir: r.working_dir,
@@ -110,6 +118,7 @@ impl From<&Role> for RoleRow {
             handle: r.handle.clone(),
             display_name: r.display_name.clone(),
             runtime: r.runtime.clone(),
+            execution_target: r.execution_target.clone(),
             command: r.command.clone(),
             args_json: Some(r.args.clone()),
             working_dir: r.working_dir.clone(),
@@ -140,6 +149,7 @@ pub fn update(conn: &Connection, row: &RoleRow) -> rusqlite::Result<usize> {
         "UPDATE roles
             SET display_name = :display_name,
                 runtime = :runtime,
+                execution_target_json = :execution_target_json,
                 command = :command,
                 args_json = :args_json,
                 working_dir = :working_dir,
@@ -404,6 +414,7 @@ mod tests {
     fn full_row() -> RoleRow {
         let now = Utc::now();
         RoleRow {
+            execution_target: Default::default(),
             id: "r-full".into(),
             handle: "full".into(),
             display_name: "Full".into(),
@@ -429,6 +440,7 @@ mod tests {
     fn minimal_row() -> RoleRow {
         let now = Utc::now();
         RoleRow {
+            execution_target: Default::default(),
             id: "r-min".into(),
             handle: "min".into(),
             display_name: "Min".into(),

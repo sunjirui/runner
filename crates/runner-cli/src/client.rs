@@ -90,6 +90,16 @@ pub struct SocketClient {
 }
 impl SocketClient {
     pub async fn connect() -> Result<Self, ClientError> {
+        if cfg!(feature = "wsl-client") && !runner_core::wsl_bridge::integrated() {
+            return Err(ClientError::Protocol(
+                "Use the managed runner wrapper installed by Windows Runner's WSL integration"
+                    .into(),
+            ));
+        }
+        if runner_core::wsl_bridge::integrated() {
+            runner_core::wsl_bridge::command()
+                .map_err(|error| ClientError::Protocol(error.to_string()))?;
+        }
         let endpoint = endpoint().ok_or_else(|| {
             ClientError::Protocol(
                 "Runner app data directory could not be resolved from the home directory."
@@ -97,7 +107,10 @@ impl SocketClient {
             )
         })?;
         match Self::connect_endpoint(endpoint.clone()).await {
-            Err(ClientError::NotRunning) if std::env::var_os("SSH_CONNECTION").is_none() => {
+            Err(ClientError::NotRunning)
+                if !runner_core::wsl_bridge::integrated()
+                    && std::env::var_os("SSH_CONNECTION").is_none() =>
+            {
                 let paths = runner_core::daemon_process::NativePaths::resolve()
                     .map_err(|error| ClientError::Protocol(error.to_string()))?;
                 let source = std::env::current_exe()
@@ -114,6 +127,14 @@ impl SocketClient {
         launch: &runner_core::daemon_process::Launch,
         ssh: bool,
     ) -> Result<Self, ClientError> {
+        if cfg!(feature = "wsl-client") && !runner_core::wsl_bridge::integrated() {
+            return Err(ClientError::Protocol(
+                "WSL CLI requires its Windows Runner bridge".into(),
+            ));
+        }
+        if cfg!(feature = "wsl-client") || runner_core::wsl_bridge::integrated() {
+            return Self::connect_endpoint(launch.daemon_endpoint.clone()).await;
+        }
         match Self::connect_endpoint(launch.daemon_endpoint.clone()).await {
             Err(ClientError::NotRunning) if !ssh => (),
             result => return result,
@@ -248,6 +269,9 @@ pub fn call_daemon(
         ));
     }
     match name {
+        "wsl_status" => response(client.wsl_status()),
+        "wsl_enable" => response(client.wsl_enable(argument(&args, "target")?)),
+        "wsl_disable" => response(client.wsl_disable(argument(&args, "target")?)),
         "crew_list" => response(client.crew_list_all()),
         "crew_get" => response(client.crew_get(&argument::<String>(&args, "id")?)),
         "crew_create" => response(client.crew_create(parse(args)?)),
@@ -300,9 +324,20 @@ pub fn call_daemon(
         )),
         "project_list" => response(client.project_list()),
         "project_get" => response(client.project_get(&argument::<String>(&args, "id")?)),
-        "project_create" => response(
-            client.project_create_checked(argument(&args, "name")?, argument(&args, "cwd")?),
-        ),
+        "project_create" => {
+            if let Some(target) = args.get("execution_target") {
+                response(client.project_create_target(
+                    argument(&args, "name")?,
+                    argument(&args, "cwd")?,
+                    parse(target.clone())?,
+                ))
+            } else {
+                response(
+                    client
+                        .project_create_checked(argument(&args, "name")?, argument(&args, "cwd")?),
+                )
+            }
+        }
         "project_rename" => {
             response(client.project_rename(argument(&args, "id")?, argument(&args, "name")?))
         }

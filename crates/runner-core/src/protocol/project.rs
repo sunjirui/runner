@@ -36,6 +36,8 @@ impl ProjectScope {
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProjectRow {
+    #[serde(default)]
+    pub execution_target: crate::ExecutionTarget,
     pub id: String,
     pub name: String,
     pub cwd: String,

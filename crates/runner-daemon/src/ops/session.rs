@@ -267,6 +267,12 @@ fn direct_entry_from_repo(
         .catalog()
         .is_some_and(|catalog| catalog.native_fork);
     Ok(DirectSessionEntry {
+        execution_target: d
+            .row
+            .launch_definition
+            .as_ref()
+            .map(|definition| definition.execution_target.clone())
+            .unwrap_or_default(),
         session_id: d.row.id,
         project_id: d.row.project_id,
         role_id: d.row.role_id,
@@ -352,6 +358,14 @@ pub fn session_get_with_status(state: &AppCore, session_id: &str) -> Result<serd
     let session = repo::session::get_row(&*state.db.get()?, session_id)?
         .ok_or_else(|| Error::msg(format!("session not found: {session_id}")))?;
     let definition = session.launch_definition.as_ref();
+    object.insert(
+        "execution_target".into(),
+        serde_json::to_value(
+            definition
+                .map(|d| d.execution_target.clone())
+                .unwrap_or_default(),
+        )?,
+    );
     object.insert(
         "agent_model".into(),
         serde_json::to_value(definition.and_then(|definition| definition.model.as_ref()))?,
@@ -890,12 +904,20 @@ pub(crate) fn resolve_direct_start_in(
     scope: &ProjectScope,
     cwd: Option<String>,
 ) -> Result<(Role, Option<String>, Option<String>)> {
-    let role = role::get(conn, role_id)?;
+    let mut role = role::get(conn, role_id)?;
+    if let ProjectScope::Project(id) = scope {
+        let target = project::get(conn, id)?.execution_target;
+        if role.execution_target != target {
+            role.working_dir = None;
+        }
+        role.execution_target = target;
+    }
     let cwd = match scope {
         ProjectScope::Project(_) => cwd,
         ProjectScope::Infer | ProjectScope::Root => cwd.or_else(|| role.working_dir.clone()),
     };
-    let (project_id, cwd) = project::resolve_scope(conn, scope, cwd)?;
+    let (project_id, cwd) =
+        project::resolve_target_scope(conn, scope, cwd, &role.execution_target)?;
     Ok((role, project_id, cwd))
 }
 
@@ -1047,11 +1069,35 @@ pub fn session_start_runtime_with_speed(
     effort: Option<String>,
     speed: Option<CodexSpeed>,
 ) -> Result<StartDirectSessionOutput> {
+    let target = match scope.project_id() {
+        Some(id) => project::get(&*state.db.get()?, id)?.execution_target,
+        None => runner_core::ExecutionTarget::Native,
+    };
+    session_start_runtime_in_target(
+        state, runtime, scope, cwd, cols, rows, model, effort, speed, target,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn session_start_runtime_in_target(
+    state: &AppCore,
+    runtime: &str,
+    scope: ProjectScope,
+    cwd: Option<String>,
+    cols: Option<u16>,
+    rows: Option<u16>,
+    model: Option<String>,
+    effort: Option<String>,
+    speed: Option<CodexSpeed>,
+    target: runner_core::ExecutionTarget,
+) -> Result<StartDirectSessionOutput> {
+    crate::wsl::require_windows_target(&target)?;
     let (project_id, cwd) = {
         let conn = state.db.get()?;
-        project::resolve_scope(&conn, &scope, cwd)?
+        project::resolve_target_scope(&conn, &scope, cwd, &target)?
     };
     let mut role = runtime_direct_role(runtime, None, model.as_deref(), effort.as_deref())?;
+    role.execution_target = target;
     if crate::runtimes::for_key(runtime).capabilities().codex_speed {
         role.codex_speed = speed;
     }
@@ -1191,10 +1237,70 @@ pub fn session_archive_direct(state: &AppCore, session_id: &str) -> Result<()> {
     session_archive(state, session_id)
 }
 
+pub fn session_start_chat_in_target(
+    state: &AppCore,
+    args: runner_core::protocol::StartDirectSessionArgs,
+    scope: ProjectScope,
+    initial_size: Option<(u16, u16)>,
+) -> Result<StartDirectSessionOutput> {
+    let target = args
+        .execution_target
+        .ok_or_else(|| Error::msg("execution target is required"))?;
+    crate::wsl::require_windows_target(&target)?;
+    let (cols, rows) = (initial_size.map(|s| s.0), initial_size.map(|s| s.1));
+    if let Some(role_id) = args.role_id {
+        let (mut role, project_id, cwd) = {
+            let conn = state.db.get()?;
+            let mut role = crate::ops::role::get(&conn, &role_id)?;
+            if role.execution_target != target {
+                role.working_dir = None;
+            }
+            let cwd = match &scope {
+                ProjectScope::Project(_) => args.cwd,
+                _ => args.cwd.or_else(|| role.working_dir.clone()),
+            };
+            let (project_id, cwd) = project::resolve_target_scope(&conn, &scope, cwd, &target)?;
+            (role, project_id, cwd)
+        };
+        role.execution_target = target;
+        return spawn_direct_chat(
+            state,
+            &role,
+            args.runtime.map(|r| r.to_string()),
+            args.model,
+            args.effort,
+            args.speed,
+            project_id,
+            cwd,
+            cols,
+            rows,
+        );
+    }
+    let runtime = args
+        .runtime
+        .ok_or_else(|| Error::msg("one of role_id or runtime is required"))?;
+    session_start_runtime_in_target(
+        state,
+        runtime.key(),
+        scope,
+        args.cwd,
+        cols,
+        rows,
+        args.model,
+        args.effort,
+        args.speed,
+        target,
+    )
+}
+
 pub fn session_start_chat(
     state: &AppCore,
     args: runner_core::protocol::StartDirectSessionArgs,
 ) -> Result<StartDirectSessionOutput> {
+    if args.execution_target.is_some() {
+        let scope = ProjectScope::or_infer(args.project_id.clone());
+        return session_start_chat_in_target(state, args, scope, None);
+    }
     match (args.role_id, args.runtime) {
         (Some(role_id), runtime) => session_start_direct_impl_with_speed(
             state,
@@ -2305,6 +2411,7 @@ mod client_tests {
     fn direct_start_requires_a_role_or_runtime() {
         let core = crate::test_support::test_core();
         let args = StartDirectSessionArgs {
+            execution_target: None,
             role_id: None,
             runtime: None,
             model: None,
@@ -2352,6 +2459,7 @@ mod client_tests {
             session::session_start_chat(
                 &handler,
                 StartDirectSessionArgs {
+                    execution_target: None,
                     role_id: Some("role".into()),
                     runtime: None,
                     model: None,
@@ -2389,6 +2497,7 @@ mod client_tests {
             session::session_start_chat(
                 &handler,
                 StartDirectSessionArgs {
+                    execution_target: None,
                     role_id: None,
                     runtime: Some(crate::model::Runtime::Codex),
                     model: None,
@@ -2457,6 +2566,7 @@ mod client_tests {
                 session::session_start_chat(
                     &handler,
                     StartDirectSessionArgs {
+                        execution_target: None,
                         role_id: role_id.map(str::to_owned),
                         runtime: role_id.is_none().then_some(crate::model::Runtime::Codex),
                         model: None,
@@ -2492,6 +2602,7 @@ mod client_tests {
             session::session_start_chat(
                 &handler,
                 StartDirectSessionArgs {
+                    execution_target: None,
                     role_id: None,
                     runtime: Some(crate::model::Runtime::ClaudeCode),
                     model: None,
@@ -2573,6 +2684,7 @@ mod client_tests {
             crate::repo::mission::insert(
                 &conn,
                 &crate::repo::mission::MissionRow {
+                    execution_target: Default::default(),
                     id: "mission".into(),
                     crew_id: Some("crew".into()),
                     project_id: None,

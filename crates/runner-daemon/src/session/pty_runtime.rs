@@ -96,6 +96,7 @@ impl Default for PtyRuntime {
 }
 
 struct SessionHandle {
+    wsl: Option<crate::wsl_session::HostSession>,
     #[cfg(unix)]
     master: Mutex<Box<dyn MasterPty + Send>>,
     #[cfg(windows)]
@@ -189,41 +190,87 @@ impl SessionRuntime for PtyRuntime {
         // we'd use for std::process::Command — minus the inherited-env
         // surprises (CommandBuilder clears inherited env unless we
         // explicitly env_clear()).
-        let mut cmd = CommandBuilder::new(&spec.command);
-        cmd.args(&spec.args);
-        if let Some(cwd) = &spec.cwd {
-            cmd.cwd(cwd);
-        }
-
-        // Reserved env names (PATH) come from the composed result, not
-        // from spec.env.
-        for (k, v) in &spec.env {
-            if launch::is_reserved_env_name(k) {
-                continue;
+        let mut wsl = if spec.execution_target.is_native() {
+            None
+        } else {
+            let data = spec
+                .env
+                .get("RUNNER_WSL_HOST_DATA")
+                .ok_or_else(|| RuntimeError::Msg("WSL host data directory is missing".into()))?;
+            Some(
+                crate::wsl_session::HostSession::prepare(&spec, std::path::Path::new(data))
+                    .map_err(|error| RuntimeError::Msg(error.to_string()))?,
+            )
+        };
+        let mut cmd = if let Some((_, args)) = &wsl {
+            let mut command = CommandBuilder::new("wsl.exe");
+            command.args(args);
+            command
+        } else {
+            CommandBuilder::new(&spec.command)
+        };
+        if wsl.is_none() {
+            cmd.args(&spec.args);
+            if let Some(cwd) = &spec.cwd {
+                cmd.cwd(cwd);
             }
-            if !launch::is_valid_env_name(k) {
-                return Err(RuntimeError::Msg(format!(
-                    "invalid env var name {k:?}: must match [A-Za-z_][A-Za-z0-9_]*"
-                )));
+
+            // Reserved env names (PATH) come from the composed result, not
+            // from spec.env.
+            for (k, v) in &spec.env {
+                if launch::is_reserved_env_name(k) {
+                    continue;
+                }
+                if !launch::is_valid_env_name(k) {
+                    return Err(RuntimeError::Msg(format!(
+                        "invalid env var name {k:?}: must match [A-Za-z_][A-Za-z0-9_]*"
+                    )));
+                }
+                cmd.env(k, v);
             }
-            cmd.env(k, v);
-        }
-        cmd.env("PATH", &composed_path);
-        // Shells keep a symlinked cwd's own path only when PWD names it;
-        // otherwise they print the resolved path.
-        #[cfg(unix)]
-        if let Some(cwd) = &spec.cwd {
-            cmd.env("PWD", cwd);
-        }
-        // COLUMNS/LINES so Node-based TUIs pick up the initial grid
-        // before SIGWINCH lands.
-        cmd.env("COLUMNS", cols.to_string());
-        cmd.env("LINES", rows.to_string());
+            cmd.env("PATH", &composed_path);
+            // Shells keep a symlinked cwd's own path only when PWD names it;
+            // otherwise they print the resolved path.
+            #[cfg(unix)]
+            if let Some(cwd) = &spec.cwd {
+                cmd.env("PWD", cwd);
+            }
+            // COLUMNS/LINES so Node-based TUIs pick up the initial grid
+            // before SIGWINCH lands.
+            cmd.env("COLUMNS", cols.to_string());
+            cmd.env("LINES", rows.to_string());
 
-        #[cfg(windows)]
-        launch::adapt_windows_batch_command(&mut cmd)
-            .map_err(|error| RuntimeError::Msg(error.to_string()))?;
-
+            #[cfg(windows)]
+            launch::adapt_windows_batch_command(&mut cmd)
+                .map_err(|error| RuntimeError::Msg(error.to_string()))?;
+        }
+        let mut status_spec = spec.clone();
+        if let Some((session, _)) = &wsl {
+            status_spec.env.insert(
+                "RUNNER_WSL_LAUNCH_DIR".into(),
+                session.launch_dir().to_string_lossy().into_owned(),
+            );
+        }
+        if !spec.execution_target.is_native() {
+            for key in [
+                "CODEX_HOME",
+                "COPILOT_HOME",
+                "GROK_HOME",
+                "CURSOR_CONFIG_DIR",
+                "XDG_DATA_HOME",
+                "XDG_CONFIG_HOME",
+            ] {
+                if let Some(value) = spec.env.get(key).filter(|value| value.starts_with('/')) {
+                    if let Ok(path) = spec.execution_target.host_path(value) {
+                        status_spec.env.insert(key.into(), path);
+                    }
+                }
+            }
+            status_spec.env.insert(
+                runner_core::wsl_bridge::TARGET_ENV.into(),
+                serde_json::to_string(&spec.execution_target).unwrap(),
+            );
+        }
         let mut hook_status = spec
             .agent_runtime
             .and_then(|runtime| crate::runtimes::adapter(runtime).status_hooks())
@@ -235,7 +282,7 @@ impl SessionRuntime for PtyRuntime {
                         spec.session_id.clone(),
                         generation.clone(),
                     );
-                    hooks.start_receiver(&spec, receiver)
+                    hooks.start_receiver(&status_spec, receiver)
                 } else {
                     None
                 }
@@ -302,7 +349,17 @@ impl SessionRuntime for PtyRuntime {
             }
             idle_detector.hooks_unavailable();
         }
+        if let Some((session, _)) = wsl.as_mut() {
+            if let Err(error) = session.acknowledge() {
+                let _ = session.stop();
+                if let Some(tree) = &process_tree {
+                    let _ = tree.terminate();
+                }
+                return Err(RuntimeError::Msg(error.to_string()));
+            }
+        }
         let handle = Arc::new(SessionHandle {
+            wsl: wsl.map(|(session, _)| session),
             #[cfg(unix)]
             master: Mutex::new(pair.master),
             #[cfg(windows)]
@@ -355,6 +412,10 @@ impl SessionRuntime for PtyRuntime {
     fn stop(&self, session: &RuntimeSession) -> RuntimeResult<()> {
         let handle = lookup(self, &session.session_id)?;
         self.hooks.retire(&session.session_id);
+        if let Some(wsl) = &handle.wsl {
+            wsl.stop()
+                .map_err(|error| RuntimeError::Msg(error.to_string()))?;
+        }
         let mut killer = handle.killer.lock().expect("killer poisoned");
         let child = handle.child.lock().expect("child slot poisoned").take();
         // Snapshot before SIGHUP: once the agent is gone its children are
@@ -408,6 +469,10 @@ impl SessionRuntime for PtyRuntime {
     fn stop(&self, session: &RuntimeSession) -> RuntimeResult<()> {
         let handle = lookup(self, &session.session_id)?;
         self.hooks.retire(&session.session_id);
+        if let Some(wsl) = &handle.wsl {
+            wsl.stop()
+                .map_err(|error| RuntimeError::Msg(error.to_string()))?;
+        }
         let child = handle.child.lock().expect("child slot poisoned").take();
         match child {
             Some(mut child) => {
@@ -728,6 +793,9 @@ fn record_exit_status(handle: &SessionHandle, status: ExitStatus) {
         .unwrap_or(EXIT_UNSET.saturating_add(1));
     handle.exit_code.store(code, Ordering::Release);
     handle.alive.store(false, Ordering::Release);
+    if let Some(wsl) = &handle.wsl {
+        wsl.finished();
+    }
 }
 
 // --- Reader thread ------------------------------------------------------
@@ -1122,6 +1190,9 @@ fn reader_thread(
     }
 
     handle.alive.store(false, Ordering::Release);
+    if let Some(wsl) = &handle.wsl {
+        wsl.finished();
+    }
 
     // Reap the child to capture its exit code. Take the value out so
     // the std::process::Child equivalent is consumed and not double-
@@ -1451,6 +1522,7 @@ mod tests {
             "launch".into(),
         );
         let spec = SpawnSpec {
+            execution_target: Default::default(),
             agent_runtime: Some(crate::model::Runtime::Codex),
             session_id: "silent-bridge".into(),
             mission: true,
@@ -1577,6 +1649,7 @@ mod tests {
     fn spec(session_id: &str, command: &str, args: &[&str]) -> SpawnSpec {
         let env: BTreeMap<String, String> = BTreeMap::new();
         SpawnSpec {
+            execution_target: Default::default(),
             agent_runtime: None,
             pending_turn: None,
             session_id: session_id.to_string(),

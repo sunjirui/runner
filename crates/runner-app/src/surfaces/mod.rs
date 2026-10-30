@@ -6,6 +6,7 @@ pub(crate) mod chat;
 pub(crate) mod chat_lifecycle;
 pub(crate) mod command_palette;
 pub(crate) mod crews;
+pub(crate) mod execution;
 pub(crate) mod mission_composer;
 pub(crate) mod mission_feed;
 pub(crate) mod mission_markdown;

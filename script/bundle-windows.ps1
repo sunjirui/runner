@@ -6,6 +6,7 @@ param(
     [string]$Sha = $env:RUNNER_BUILD_SHA,
     [ValidateRange(1, 256)]
     [int]$Jobs = [Math]::Min(12, [Environment]::ProcessorCount),
+    [string]$WslCliPath = $env:RUNNER_WSL_CLI_PATH,
     [string]$SigningThumbprint = $env:CERTUM_CERTIFICATE_SHA1
 )
 
@@ -58,6 +59,11 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Windows release build failed' }
 
     $release = Join-Path $metadata.target_directory 'x86_64-pc-windows-msvc/release'
+    if (-not $WslCliPath) { $WslCliPath = Join-Path $repo 'target/wsl/runner-agent-cli-linux' }
+    if (-not (Test-Path -LiteralPath $WslCliPath -PathType Leaf)) {
+        throw 'The Linux CLI is required for WSL integration. Build it with script/build-wsl-cli on Linux/WSL and pass -WslCliPath.'
+    }
+    Copy-Item -LiteralPath $WslCliPath -Destination (Join-Path $release 'runner-agent-cli-linux') -Force
     & (Join-Path $PSScriptRoot 'windows/conpty.ps1') -OutputDir $release
     $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
     $dumpbin = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find 'VC/Tools/MSVC/**/bin/Hostx64/x64/dumpbin.exe' | Select-Object -First 1

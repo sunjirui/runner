@@ -314,6 +314,7 @@ mod tests {
             &mut conn,
             data.path(),
             StartMissionInput {
+                execution_target: None,
                 crew_id: old.crew_id,
                 project_id: None,
                 title: "New mission".into(),
@@ -656,6 +657,7 @@ mod tests {
                 &mut conn,
                 &start_dir,
                 StartMissionInput {
+                    execution_target: None,
                     crew_id: Some("c".into()),
                     project_id: None,
                     title: "Concurrent start".into(),

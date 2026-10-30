@@ -218,8 +218,33 @@ jobs:
           path: target/release-artifacts/*
           if-no-files-found: error
 
-  build-windows:
+  build-wsl-cli:
     needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: wsl-cli
+      - name: Install musl toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+          rustup target add x86_64-unknown-linux-musl
+      - name: Build Linux CLI
+        env:
+          RUNNER_BUILD_STAMP: ${{ needs.prepare.outputs.stamp }}
+          RUNNER_BUILD_SHA: ${{ needs.prepare.outputs.sha }}
+        run: bash script/build-wsl-cli
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wsl-cli
+          path: target/wsl/runner-agent-cli-linux
+          if-no-files-found: error
+
+  build-windows:
+    needs: [prepare, build-wsl-cli]
     runs-on: windows-latest
     timeout-minutes: 90
     steps:
@@ -240,6 +265,12 @@ jobs:
           test -n "$CERTUM_USERNAME" || { echo "error: CERTUM_USERNAME is not configured" >&2; exit 1; }
           test -n "$CERTUM_OTP_URI" || { echo "error: CERTUM_OTP_URI is not configured" >&2; exit 1; }
           test -n "$CERTUM_CERTIFICATE_SHA1" || { echo "error: CERTUM_CERTIFICATE_SHA1 is not configured" >&2; exit 1; }
+
+      - name: Download Linux CLI
+        uses: actions/download-artifact@v4
+        with:
+          name: wsl-cli
+          path: target/wsl
 
       - name: Install Rust toolchain
         run: |

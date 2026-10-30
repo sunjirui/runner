@@ -241,6 +241,7 @@ fn antigravity_cwd_context_covers_chats_leads_workers_and_resumes_without_changi
         ("mission-resume", true, Some(key), None),
     ] {
         let mut spec = SpawnSpec {
+            execution_target: Default::default(),
             session_id: shape.into(),
             cwd: Some(cwd.clone()),
             command: role.command.clone(),
@@ -249,15 +250,17 @@ fn antigravity_cwd_context_covers_chats_leads_workers_and_resumes_without_changi
             ..Default::default()
         };
         let plan = crate::runtimes::for_key(&role.runtime).resume_plan(prior);
-        mgr_with_fake(None, fake_runtime()).apply_runtime_args(
-            &mut spec,
-            &role,
-            &plan,
-            data.path(),
-            None,
-            first_turn,
-            mission.then_some(bus.as_path()),
-        );
+        mgr_with_fake(None, fake_runtime())
+            .apply_runtime_args(
+                &mut spec,
+                &role,
+                &plan,
+                data.path(),
+                None,
+                first_turn,
+                mission.then_some(bus.as_path()),
+            )
+            .unwrap();
         assert_eq!(spec.cwd.as_deref(), Some(cwd.as_path()));
         assert_eq!(&spec.args[..role.args.len()], &role.args, "{shape}");
         assert_eq!(

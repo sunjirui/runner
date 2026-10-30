@@ -7,6 +7,8 @@ pub struct CreateRoleInput {
     pub handle: String,
     pub display_name: String,
     pub runtime: Runtime,
+    #[serde(default)]
+    pub execution_target: crate::ExecutionTarget,
     pub command: String,
     #[serde(default)]
     pub args: Vec<String>,
@@ -53,6 +55,7 @@ pub fn default_permission_mode() -> super::permissions::PermissionMode {
 pub struct UpdateRoleInput {
     pub display_name: Option<String>,
     pub runtime: Option<Runtime>,
+    pub execution_target: Option<crate::ExecutionTarget>,
     pub command: Option<String>,
     pub args: Option<Vec<String>>,
     #[serde(

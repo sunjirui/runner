@@ -137,6 +137,7 @@ mod tests {
 
     fn shell_spec(command: &str) -> SpawnSpec {
         SpawnSpec {
+            execution_target: Default::default(),
             session_id: "01TEST".into(),
             command: command.into(),
             args: vec!["-l".into()],
@@ -314,6 +315,7 @@ mod real_shells {
             std::fs::create_dir_all(home.join("sub dir/中文")).unwrap();
             let data = home.join("app-data");
             let mut spec = SpawnSpec {
+                execution_target: Default::default(),
                 session_id: ulid::Ulid::new().to_string(),
                 command: command.into(),
                 args: crate::shell_path::shell_login_args(command),

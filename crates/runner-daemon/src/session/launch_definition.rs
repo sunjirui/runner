@@ -4,6 +4,7 @@ use crate::model::{CodexSpeed, LaunchDefinition, Role, Runtime};
 
 pub(crate) fn from_effective(role: &Role) -> LaunchDefinition {
     LaunchDefinition {
+        execution_target: role.execution_target.clone(),
         command: role.command.clone(),
         args: role.args.clone(),
         env: role
@@ -20,6 +21,7 @@ pub(crate) fn from_effective(role: &Role) -> LaunchDefinition {
 
 pub(crate) fn to_role(definition: &LaunchDefinition, runtime: &str, mut identity: Role) -> Role {
     identity.runtime = runtime.to_owned();
+    identity.execution_target = definition.execution_target.clone();
     identity.command = definition.command.clone();
     identity.args = definition.args.clone();
     identity.env = definition

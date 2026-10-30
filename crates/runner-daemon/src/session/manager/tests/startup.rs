@@ -91,6 +91,7 @@ impl StartupFixture {
         let (runtime_session, output) = self
             .fake
             .spawn(SpawnSpec {
+                execution_target: Default::default(),
                 session_id: "session".into(),
                 ..Default::default()
             })

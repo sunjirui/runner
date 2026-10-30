@@ -64,7 +64,7 @@ pub(super) fn agent_env(
     env
 }
 
-pub(super) fn run_headless_fork(
+pub(crate) fn run_headless_fork(
     spec: &SpawnSpec,
     plan: &router::runtime::ForkPlan,
     timeout: Duration,
@@ -74,6 +74,17 @@ pub(super) fn run_headless_fork(
             "direct fork plan cannot run as a headless materializer",
         ));
     };
+    if !spec.execution_target.is_native() {
+        return crate::wsl::helper(
+            &spec.execution_target,
+            &crate::wsl::HelperRequest::Fork {
+                spec: Box::new(spec.clone()),
+                args: args.clone(),
+                source_key: source_key.clone(),
+                timeout_seconds: timeout.as_secs(),
+            },
+        );
+    }
     let codex_sessions_root = codex_fork_sessions_root(spec)?;
     let inherited_path = std::env::var("PATH").ok();
     let home = runner_core::app_paths::home_dir();
@@ -359,6 +370,10 @@ impl SessionManager {
         self.runtime.spawn(spec)
     }
     fn resolve_role_executable(&self, role: &Role, pool: &DbPool) -> Result<Role> {
+        if !role.execution_target.is_native() {
+            crate::wsl::require_windows_target(&role.execution_target)?;
+            return Ok(role.clone());
+        }
         let Some(definition) = crate::runtimes::for_key(&role.runtime).catalog() else {
             return Ok(role.clone());
         };
@@ -420,11 +435,15 @@ impl SessionManager {
 
     fn seed_runtime_project_trust(
         &self,
+        execution_target: &runner_core::ExecutionTarget,
         session_id: &str,
         runtime_key: &str,
         cwd: Option<&Path>,
         copilot_home: Option<&str>,
     ) {
+        if !execution_target.is_native() {
+            return;
+        }
         let result =
             crate::runtimes::for_key(runtime_key).seed_trust(session_id, cwd, copilot_home);
         if let (Err(e), Some(cwd)) = (result, cwd) {
@@ -459,17 +478,31 @@ impl SessionManager {
             .expect("runtime shell environment lock poisoned")
             .clone();
         SpawnSpec {
+            execution_target: role.execution_target.clone(),
             agent_runtime: Runtime::parse(&role.runtime),
             pending_turn: None,
             session_id,
             cwd: cwd.map(PathBuf::from),
             command: role.command.clone(),
             args: role.args.clone(),
-            env: agent_env(shell_env.vars, &role.env, extra_env, &role.runtime),
+            env: agent_env(
+                if role.execution_target.is_native() {
+                    shell_env.vars
+                } else {
+                    BTreeMap::new()
+                },
+                &role.env,
+                extra_env,
+                &role.runtime,
+            ),
             mission,
             shim_dir,
             bundled_bin_dir,
-            shell_path: shell_env.path,
+            shell_path: role
+                .execution_target
+                .is_native()
+                .then_some(shell_env.path)
+                .flatten(),
             initial_size,
         }
     }
@@ -491,6 +524,7 @@ impl SessionManager {
             .expect("runtime shell environment lock poisoned")
             .clone();
         SpawnSpec {
+            execution_target: Default::default(),
             agent_runtime: None,
             pending_turn: None,
             session_id: ulid::Ulid::new().to_string(),
@@ -602,7 +636,33 @@ impl SessionManager {
         system_prompt_path: Option<&Path>,
         first_turn: Option<&str>,
         mission_bus_dir: Option<&Path>,
-    ) -> bool {
+    ) -> Result<bool> {
+        if !role.execution_target.is_native() {
+            crate::wsl::ensure_current(app_data_dir, &role.execution_target)?;
+            spec.env.insert(
+                "RUNNER_WSL_HOST_DATA".into(),
+                app_data_dir.to_string_lossy().into_owned(),
+            );
+            let system_prompt = system_prompt_path
+                .map(|p| crate::wsl::linux_path(&role.execution_target, p))
+                .transpose()?;
+            let mission_dir = mission_bus_dir
+                .map(|p| crate::wsl::linux_path(&role.execution_target, p))
+                .transpose()?;
+            let prepared: crate::wsl::Prepared = crate::wsl::helper(
+                &role.execution_target,
+                &crate::wsl::HelperRequest::Prepare {
+                    spec: Box::new(spec.clone()),
+                    role: Box::new(role.clone()),
+                    plan: plan.clone(),
+                    system_prompt,
+                    first_turn: first_turn.map(str::to_owned),
+                    mission_dir,
+                },
+            )?;
+            *spec = prepared.spec;
+            return Ok(prepared.first_turn_in_argv);
+        }
         let adapter = crate::runtimes::for_key(&role.runtime);
         let env = crate::shell_path::LoginShellEnv {
             path: spec.shell_path.clone(),
@@ -692,7 +752,7 @@ impl SessionManager {
         if is_terminal_shell(role) && !spec.mission {
             crate::shell_integration::inject(spec, app_data_dir, |name| std::env::var(name).ok());
         }
-        delivered_via_argv
+        Ok(delivered_via_argv)
     }
 
     pub(super) fn codex_capture_prompt_marker(
@@ -727,6 +787,7 @@ impl SessionManager {
         session_id: &str,
         mission_id: Option<String>,
         app_data_dir: &Path,
+        spec: &SpawnSpec,
         row_started_at: &str,
         stop: Arc<AtomicBool>,
         pool: &Arc<DbPool>,
@@ -744,7 +805,12 @@ impl SessionManager {
                 session_id: session_id.to_owned(),
                 mission_id,
                 log_path: crate::runtimes::antigravity::agy_capture::log_path(
-                    app_data_dir,
+                    &spec
+                        .env
+                        .get("RUNNER_WSL_APP_DATA")
+                        .and_then(|path| spec.execution_target.host_path(path).ok())
+                        .map(PathBuf::from)
+                        .unwrap_or_else(|| app_data_dir.to_path_buf()),
                     session_id,
                 ),
                 expected_row_started_at: row_started_at.to_owned(),
@@ -805,6 +871,10 @@ impl SessionManager {
         {
             role.codex_speed = slot.codex_speed_override.or(role.codex_speed);
         }
+        if role.execution_target != mission.execution_target {
+            role.working_dir = None;
+        }
+        role.execution_target = mission.execution_target.clone();
         let launch_definition = crate::session::launch_definition::from_effective(&role);
         role.args = crate::runtimes::for_key(&role.runtime)
             .permissions()
@@ -826,7 +896,11 @@ impl SessionManager {
         // claude-code (its conversation files are keyed under
         // `~/.claude/projects/<encoded-cwd>/<uuid>.jsonl`; resuming with a
         // different cwd makes `--resume` fail).
-        let resolved_cwd = resolve_spawn_cwd(mission.cwd.as_deref(), role.working_dir.as_deref());
+        let resolved_cwd = crate::wsl::resolve_cwd(
+            &role.execution_target,
+            mission.cwd.as_deref(),
+            role.working_dir.as_deref(),
+        )?;
 
         // Per-slot role shim: hardcodes the RUNNER_* env vars + exec's
         // the real bundled CLI. claude-code's Bash tool spawns
@@ -892,7 +966,7 @@ impl SessionManager {
             system_prompt_path.as_deref(),
             first_turn.as_deref(),
             Some(&mission_bus_dir),
-        );
+        )?;
 
         // Insert the row first (status=running with no runtime_*
         // metadata yet) so a fast-failing runtime spawn doesn't leave
@@ -1066,6 +1140,7 @@ impl SessionManager {
         }
         let initial_size = spec.initial_size;
         self.seed_runtime_project_trust(
+            &role.execution_target,
             &session_id,
             &role.runtime,
             spec.cwd.as_deref(),
@@ -1073,14 +1148,24 @@ impl SessionManager {
         );
         let capture_root =
             match crate::runtimes::for_key(&role.runtime).key_capture_for_spawn(&spec) {
-                crate::runtimes::KeyCapture::RolloutScan { sessions_root } => sessions_root,
+                crate::runtimes::KeyCapture::RolloutScan { sessions_root } => sessions_root
+                    .and_then(|root| {
+                        if role.execution_target.is_native() {
+                            Some(root)
+                        } else {
+                            role.execution_target
+                                .host_path(&root.to_string_lossy())
+                                .ok()
+                                .map(PathBuf::from)
+                        }
+                    }),
                 _ => None,
             };
         let spawning = self.shutdown.read().unwrap();
         if *spawning {
             return Err(Error::msg("runnerd is stopping"));
         }
-        let (rt_session, output) = match self.spawn_runtime(spec) {
+        let (rt_session, output) = match self.spawn_runtime(spec.clone()) {
             Ok(spawned) => spawned,
             Err(error) => {
                 crate::session::system_prompt::remove(&app_data_dir, &session_id);
@@ -1168,6 +1253,7 @@ impl SessionManager {
             &session_id,
             Some(mission.id.clone()),
             &app_data_dir,
+            &spec,
             &row_started_at,
             Arc::clone(&stop),
             &pool,
@@ -1544,13 +1630,14 @@ impl SessionManager {
         let plan = crate::runtimes::for_key(&role.runtime).resume_plan(None);
 
         // Reject explicitly missing folders before portable-pty can substitute another cwd.
-        let resolved_cwd = resolve_spawn_cwd(cwd, role.working_dir.as_deref());
+        let resolved_cwd =
+            crate::wsl::resolve_cwd(&role.execution_target, cwd, role.working_dir.as_deref())?;
         let Some(chat_cwd) = resolved_cwd.as_deref() else {
             return Err(Error::msg(
                 "home directory is unavailable; select a working directory before starting a chat",
             ));
         };
-        if !std::path::Path::new(chat_cwd).is_dir() {
+        if role.execution_target.is_native() && !std::path::Path::new(chat_cwd).is_dir() {
             return Err(Error::msg(format!(
                 "working directory does not exist: {chat_cwd}"
             )));
@@ -1600,7 +1687,7 @@ impl SessionManager {
             system_prompt_path.as_deref(),
             first_turn.as_deref(),
             None,
-        );
+        )?;
 
         // Insert the row first so a fast-failing spawn doesn't leave
         // a half-row. Every chat carries its spawned engine on the row
@@ -1658,6 +1745,7 @@ impl SessionManager {
         #[cfg(windows)]
         let first_turn_deadline = Instant::now() + WINDOWS_FIRST_TURN_TIMEOUT;
         self.seed_runtime_project_trust(
+            &role.execution_target,
             &session_id,
             &role.runtime,
             spec.cwd.as_deref(),
@@ -1665,14 +1753,24 @@ impl SessionManager {
         );
         let capture_root =
             match crate::runtimes::for_key(&role.runtime).key_capture_for_spawn(&spec) {
-                crate::runtimes::KeyCapture::RolloutScan { sessions_root } => sessions_root,
+                crate::runtimes::KeyCapture::RolloutScan { sessions_root } => sessions_root
+                    .and_then(|root| {
+                        if role.execution_target.is_native() {
+                            Some(root)
+                        } else {
+                            role.execution_target
+                                .host_path(&root.to_string_lossy())
+                                .ok()
+                                .map(PathBuf::from)
+                        }
+                    }),
                 _ => None,
             };
         let spawning = self.shutdown.read().unwrap();
         if *spawning {
             return Err(Error::msg("runnerd is stopping"));
         }
-        let (rt_session, output) = match self.spawn_runtime(spec) {
+        let (rt_session, output) = match self.spawn_runtime(spec.clone()) {
             Ok(p) => p,
             Err(e) => {
                 let _ = delete_session_row(&pool, &session_id);
@@ -1729,6 +1827,7 @@ impl SessionManager {
             &session_id,
             None,
             app_data_dir,
+            &spec,
             &started_at,
             output.stop_flag(),
             &pool,
@@ -1918,13 +2017,17 @@ impl SessionManager {
             .permissions()
             .strip(&role.args);
 
-        let resolved_cwd = resolve_spawn_cwd(source.cwd.as_deref(), role.working_dir.as_deref());
+        let resolved_cwd = crate::wsl::resolve_cwd(
+            &role.execution_target,
+            source.cwd.as_deref(),
+            role.working_dir.as_deref(),
+        )?;
         let Some(chat_cwd) = resolved_cwd.as_deref() else {
             return Err(Error::msg(
                 "home directory is unavailable; select a working directory before forking a chat",
             ));
         };
-        if !Path::new(chat_cwd).is_dir() {
+        if role.execution_target.is_native() && !Path::new(chat_cwd).is_dir() {
             return Err(Error::msg(format!(
                 "working directory does not exist: {chat_cwd}"
             )));
@@ -2062,13 +2165,13 @@ impl SessionManager {
                     system_prompt_path.as_deref(),
                     None,
                     None,
-                );
+                )?;
                 let direct_spawn_started_at = Instant::now();
                 let spawning = self.shutdown.read().unwrap();
                 if *spawning {
                     return Err(Error::msg("runnerd is stopping"));
                 }
-                let (rt_session, output) = match self.spawn_runtime(spec) {
+                let (rt_session, output) = match self.spawn_runtime(spec.clone()) {
                     Ok(spawned) => spawned,
                     Err(error) => {
                         log::info!(
@@ -2180,6 +2283,7 @@ impl SessionManager {
             }
             headless @ router::runtime::ForkPlan::Headless { .. } => {
                 self.seed_runtime_project_trust(
+                    &role.execution_target,
                     &session_id,
                     &role.runtime,
                     spec.cwd.as_deref(),
@@ -2429,6 +2533,7 @@ impl SessionManager {
             crew_id: Option<String>,
             mission_id: String,
             mission_cwd: Option<String>,
+            execution_target: runner_core::ExecutionTarget,
             slot_handle: String,
             roster: crate::ops::mission::roster::LoadedRoster,
         }
@@ -2464,6 +2569,7 @@ impl SessionManager {
                     crew_id: mission.crew_id,
                     mission_id: mission.id,
                     mission_cwd: mission.cwd,
+                    execution_target: mission.execution_target,
                     slot_handle: slot.slot_handle.clone(),
                     roster,
                 })
@@ -2510,6 +2616,12 @@ impl SessionManager {
             };
             crate::session::launch_definition::to_role(definition, runtime, identity)
         };
+        if let Some(ctx) = &mission_ctx {
+            if role.execution_target != ctx.execution_target {
+                role.working_dir = None;
+            }
+            role.execution_target = ctx.execution_target.clone();
+        }
         let new_definition =
             fresh.then(|| crate::session::launch_definition::from_effective(&role));
         if mission_ctx.is_some() {
@@ -2538,10 +2650,11 @@ impl SessionManager {
         // print "No conversation found" and leave the TUI half-broken.
         // Detect the missing file up front and degrade to a fresh
         // spawn with a newly self-assigned uuid via `--session-id`.
-        let resolved_cwd_for_check = resolve_spawn_cwd(
+        let resolved_cwd_for_check = crate::wsl::resolve_cwd(
+            &role.execution_target,
             snap.cwd.as_deref(),
             snap.role_id.as_ref().and(role.working_dir.as_deref()),
-        );
+        )?;
         let adapter = crate::runtimes::for_key(&role.runtime);
         let missing = adapter.missing_conversation();
         let mut probe_env = role.env.clone();
@@ -2559,15 +2672,32 @@ impl SessionManager {
                 .collect();
             probe_env.extend(role.env.clone());
         }
-        let conversation_missing = snap.agent_session_key.as_deref().is_some_and(|key| {
-            adapter.conversation_exists(
-                key,
-                &crate::runtimes::ProbeContext {
-                    cwd: resolved_cwd_for_check.as_deref(),
-                    role_env: &probe_env,
+        let conversation_missing = if role.execution_target.is_native() {
+            snap.agent_session_key.as_deref().is_some_and(|key| {
+                adapter.conversation_exists(
+                    key,
+                    &crate::runtimes::ProbeContext {
+                        cwd: resolved_cwd_for_check.as_deref(),
+                        role_env: &probe_env,
+                    },
+                ) == Some(false)
+            })
+        } else if let Some(key) = &snap.agent_session_key {
+            crate::wsl::ensure_current(app_data_dir, &role.execution_target)?;
+            let exists: Option<bool> = crate::wsl::helper(
+                &role.execution_target,
+                &crate::wsl::HelperRequest::ConversationExists {
+                    runtime: Runtime::parse(&role.runtime)
+                        .ok_or_else(|| Error::msg("unknown WSL runtime"))?,
+                    cwd: resolved_cwd_for_check.clone(),
+                    key: key.clone(),
+                    env: role.env.clone(),
                 },
-            ) == Some(false)
-        });
+            )?;
+            exists == Some(false)
+        } else {
+            false
+        };
         if conversation_missing && !allow_fresh_fallback && !missing.resume_on_launch {
             return Err(Error::msg(format!(
                 "session {session_id} conversation is unavailable; resume it manually to start fresh"
@@ -2602,36 +2732,36 @@ impl SessionManager {
         // Shells are safe to relaunch at a fallback directory because a human
         // remains at the prompt, so resolve that fallback before portable-pty
         // can silently substitute HOME.
-        let (resolved_cwd, shell_cwd_notice) =
-            if Runtime::parse(&role.runtime).is_some_and(Runtime::is_shell) {
-                let project_cwd = match snap.project_id.as_deref() {
-                    Some(project_id) => {
-                        let conn = pool.get()?;
-                        crate::repo::project::get(&conn, project_id)?.map(|project| project.cwd)
-                    }
-                    None => None,
-                };
-                let home = runner_core::app_paths::home_dir();
-                let (cwd, notice) = resolve_shell_resume_cwd(
-                    snap.cwd.as_deref(),
-                    project_cwd.as_deref(),
-                    home.as_deref(),
-                )?;
-                (Some(cwd), notice)
-            } else {
-                let cwd = resolved_cwd_for_check;
-                if mission_ctx.is_none() {
-                    if let Some(missing_cwd) = cwd
-                        .as_deref()
-                        .filter(|cwd| !cwd.is_empty() && !Path::new(cwd).is_dir())
-                    {
-                        return Err(Error::msg(format!(
-                            "working directory does not exist: {missing_cwd}"
-                        )));
-                    }
+        let (resolved_cwd, shell_cwd_notice) = if Runtime::parse(&role.runtime)
+            .is_some_and(Runtime::is_shell)
+        {
+            let project_cwd = match snap.project_id.as_deref() {
+                Some(project_id) => {
+                    let conn = pool.get()?;
+                    crate::repo::project::get(&conn, project_id)?.map(|project| project.cwd)
                 }
-                (cwd, None)
+                None => None,
             };
+            let home = runner_core::app_paths::home_dir();
+            let (cwd, notice) = resolve_shell_resume_cwd(
+                snap.cwd.as_deref(),
+                project_cwd.as_deref(),
+                home.as_deref(),
+            )?;
+            (Some(cwd), notice)
+        } else {
+            let cwd = resolved_cwd_for_check;
+            if mission_ctx.is_none() {
+                if let Some(missing_cwd) = cwd.as_deref().filter(|cwd| {
+                    role.execution_target.is_native() && !cwd.is_empty() && !Path::new(cwd).is_dir()
+                }) {
+                    return Err(Error::msg(format!(
+                        "working directory does not exist: {missing_cwd}"
+                    )));
+                }
+            }
+            (cwd, None)
+        };
 
         // Refresh the per-slot role shim before composing PATH —
         // mission cwd may have been edited since the last spawn.
@@ -2766,7 +2896,7 @@ impl SessionManager {
             system_prompt_path.as_deref(),
             first_turn.as_deref(),
             mission_bus_dir.as_deref(),
-        );
+        )?;
 
         let started_at_dt = Utc::now();
         let started_at = started_at_dt.to_rfc3339();
@@ -2807,6 +2937,7 @@ impl SessionManager {
         #[cfg(windows)]
         let first_turn_deadline = Instant::now() + WINDOWS_FIRST_TURN_TIMEOUT;
         self.seed_runtime_project_trust(
+            &role.execution_target,
             session_id,
             &role.runtime,
             spec.cwd.as_deref(),
@@ -2814,14 +2945,24 @@ impl SessionManager {
         );
         let capture_root =
             match crate::runtimes::for_key(&role.runtime).key_capture_for_spawn(&spec) {
-                crate::runtimes::KeyCapture::RolloutScan { sessions_root } => sessions_root,
+                crate::runtimes::KeyCapture::RolloutScan { sessions_root } => sessions_root
+                    .and_then(|root| {
+                        if role.execution_target.is_native() {
+                            Some(root)
+                        } else {
+                            role.execution_target
+                                .host_path(&root.to_string_lossy())
+                                .ok()
+                                .map(PathBuf::from)
+                        }
+                    }),
                 _ => None,
             };
         let spawning = self.shutdown.read().unwrap();
         if *spawning {
             return Err(Error::msg("runnerd is stopping"));
         }
-        let (rt_session, output) = match self.spawn_runtime(spec) {
+        let (rt_session, output) = match self.spawn_runtime(spec.clone()) {
             Ok(p) => p,
             Err(e) => {
                 // Roll the row back to stopped so the user can retry.
@@ -2895,6 +3036,7 @@ impl SessionManager {
             session_id,
             snap.mission_id.clone(),
             app_data_dir,
+            &spec,
             &started_at,
             output.stop_flag(),
             &pool,

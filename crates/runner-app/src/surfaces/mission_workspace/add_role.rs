@@ -376,6 +376,7 @@ mod tests {
     fn form_suggests_handles_and_disables_invalid_taken_and_removed_names() {
         let now = chrono::Utc::now();
         let role = Role {
+            execution_target: Default::default(),
             id: "role-coder".into(),
             handle: "coder".into(),
             display_name: "Coder".into(),

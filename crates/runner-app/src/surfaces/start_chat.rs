@@ -92,16 +92,19 @@ enum StartChatSelection {
 }
 
 pub(crate) struct StartChatModal {
+    pub(super) execution_target: Option<runner_core::ExecutionTarget>,
+    pub(super) execution_select: Entity<StyledSelect>,
+    pub(super) execution_integrations: Vec<runner_core::execution_target::WslIntegration>,
     mission_role: Option<add_role::MissionRoleForm>,
     target: ChatTarget,
-    scope: ProjectScope,
+    pub(super) scope: ProjectScope,
     mode: ChatMode,
     roles: Vec<Role>,
-    runtimes: Vec<RuntimeCatalogEntry>,
+    pub(super) runtimes: Vec<RuntimeCatalogEntry>,
     /// The agents Direct chats last started on, most recent first.
     recent_runtimes: Vec<String>,
     role_id: Option<String>,
-    runtime_name: Option<String>,
+    pub(super) runtime_name: Option<String>,
     /// The agent a role chat runs on when it is not the role's own; picking
     /// the role's own agent clears it.
     role_runtime_override: Option<String>,
@@ -110,12 +113,12 @@ pub(crate) struct StartChatModal {
     effort: String,
     speed: String,
     title: Entity<TextField>,
-    cwd: Entity<TextField>,
+    pub(super) cwd: Entity<TextField>,
     model: Entity<TextField>,
     model_field: Entity<ModelField>,
     role_select: Entity<StyledSelect>,
     role_runtime_select: Entity<StyledSelect>,
-    runtime_select: Entity<StyledSelect>,
+    pub(super) runtime_select: Entity<StyledSelect>,
     effort_select: Entity<StyledSelect>,
     speed_select: Entity<StyledSelect>,
     scroll_handle: ScrollHandle,
@@ -128,8 +131,8 @@ pub(crate) struct StartChatModal {
     close_focus: FocusHandle,
     cancel_focus: FocusHandle,
     submit_focus: FocusHandle,
-    agents_checking: bool,
-    agents_error: Option<String>,
+    pub(super) agents_checking: bool,
+    pub(super) agents_error: Option<String>,
     submitting: bool,
     error: Option<crate::i18n::Text>,
     _model_subscription: gpui::Subscription,
@@ -153,7 +156,7 @@ impl StartChatModal {
         }
     }
 
-    fn selected_role(&self) -> Option<&Role> {
+    pub(super) fn selected_role(&self) -> Option<&Role> {
         self.role_id
             .as_deref()
             .and_then(|role_id| self.roles.iter().find(|role| role.id == role_id))
@@ -1066,7 +1069,11 @@ impl NativeRoot {
         });
 
         self.sidebar_preview_open = false;
+        let execution_select = self.new_work_execution_select(super::execution::WorkKind::Chat, cx);
         self.start_chat_modal = Some(StartChatModal {
+            execution_target: None,
+            execution_select,
+            execution_integrations: Vec::new(),
             mission_role: None,
             target,
             scope,
@@ -1111,6 +1118,7 @@ impl NativeRoot {
             .unwrap()
             .picker_focus(cx)
             .focus(window, cx);
+        self.load_work_execution_targets(cx);
         self.refresh_start_chat_models(cx);
         cx.notify();
     }
@@ -1127,6 +1135,13 @@ impl NativeRoot {
     }
 
     pub(crate) fn refresh_start_chat_runtimes(&mut self, cx: &mut Context<Self>) {
+        if self
+            .start_chat_modal
+            .as_ref()
+            .is_some_and(|m| m.execution_target.as_ref().is_some_and(|t| !t.is_native()))
+        {
+            return;
+        }
         let (runtimes, agents_checking, agents_error) =
             load_selectable_runtimes(self.core(cx), self.settings(cx));
         let Some(modal) = self.start_chat_modal.as_mut() else {
@@ -1420,6 +1435,15 @@ impl NativeRoot {
             return;
         }
         let target = modal.target.clone();
+        let effective_target = modal
+            .execution_target
+            .as_ref()
+            .or_else(|| modal.selected_role().map(|role| &role.execution_target));
+        let default_cwd = if effective_target.is_some_and(|t| !t.is_native()) {
+            ""
+        } else {
+            &self.settings(cx).default_working_dir
+        };
         let cwd = effective_working_dir(
             modal.cwd.read(cx).text(),
             modal.mode == ChatMode::Role
@@ -1427,7 +1451,7 @@ impl NativeRoot {
                     .selected_role()
                     .and_then(|role| role.working_dir.as_deref())
                     .is_some_and(|path| !path.trim().is_empty()),
-            &self.settings(cx).default_working_dir,
+            default_cwd,
         );
         // A control still showing its starting value is untouched.
         let model = modal.model_override(cx);
@@ -1468,6 +1492,10 @@ impl NativeRoot {
                 return;
             }
         };
+        let execution_target = self
+            .start_chat_modal
+            .as_ref()
+            .and_then(|m| m.execution_target.clone());
         if let Some(modal) = self.start_chat_modal.as_mut() {
             modal.submitting = true;
             modal.error = None;
@@ -1478,47 +1506,84 @@ impl NativeRoot {
         let mut spawned_id = None;
         let mut rename_error = None;
         let result = (|| -> Result<String> {
-            let spawned = match request {
-                StartRequest::Role {
-                    role_id,
-                    runtime,
-                    model,
-                    effort,
-                    speed,
-                    cwd,
-                } => self.core(cx).session_start_direct_with_speed(
-                    role_id,
-                    runtime,
-                    model,
-                    effort,
-                    speed,
-                    scope,
-                    cwd,
-                    Some(initial_size.0),
-                    Some(initial_size.1),
-                )?,
-                StartRequest::Runtime {
-                    runtime,
-                    model,
-                    effort,
-                    speed,
-                    cwd,
-                } => {
-                    let spawned = self
-                        .core(cx)
-                        .session_start_runtime_with_speed(
-                            &runtime,
-                            scope,
-                            cwd,
-                            Some(initial_size.0),
-                            Some(initial_size.1),
+            let spawned = if let Some(execution_target) = execution_target {
+                let (role_id, runtime, model, effort, speed, cwd) = match request {
+                    StartRequest::Role {
+                        role_id,
+                        runtime,
+                        model,
+                        effort,
+                        speed,
+                        cwd,
+                    } => (Some(role_id), runtime, model, effort, speed, cwd),
+                    StartRequest::Runtime {
+                        runtime,
+                        model,
+                        effort,
+                        speed,
+                        cwd,
+                    } => (None, Some(runtime), model, effort, speed, cwd),
+                };
+                self.core(cx)
+                    .session_start_chat_in_target(
+                        runner_core::protocol::StartDirectSessionArgs {
+                            execution_target: Some(execution_target),
+                            role_id,
+                            runtime: runtime.as_deref().and_then(runner_core::Runtime::parse),
                             model,
                             effort,
                             speed,
-                        )?
-                        .session;
-                    let _ = record_recent_runtime(&self.app_store.read(cx).app_data_dir, &runtime);
-                    spawned
+                            project_id: scope.project_id().map(str::to_owned),
+                            cwd,
+                        },
+                        scope,
+                        Some(initial_size),
+                    )?
+                    .session
+            } else {
+                match request {
+                    StartRequest::Role {
+                        role_id,
+                        runtime,
+                        model,
+                        effort,
+                        speed,
+                        cwd,
+                    } => self.core(cx).session_start_direct_with_speed(
+                        role_id,
+                        runtime,
+                        model,
+                        effort,
+                        speed,
+                        scope,
+                        cwd,
+                        Some(initial_size.0),
+                        Some(initial_size.1),
+                    )?,
+                    StartRequest::Runtime {
+                        runtime,
+                        model,
+                        effort,
+                        speed,
+                        cwd,
+                    } => {
+                        let spawned = self
+                            .core(cx)
+                            .session_start_runtime_with_speed(
+                                &runtime,
+                                scope,
+                                cwd,
+                                Some(initial_size.0),
+                                Some(initial_size.1),
+                                model,
+                                effort,
+                                speed,
+                            )?
+                            .session;
+                        let _ =
+                            record_recent_runtime(&self.app_store.read(cx).app_data_dir, &runtime);
+                        spawned
+                    }
                 }
             };
             spawned_id = Some(spawned.id.clone());
@@ -1671,6 +1736,16 @@ impl NativeRoot {
                 .emphasized(true)
                 .tag(crate::i18n::text("word.optional")),
             )
+            .when(cfg!(windows), |body| {
+                body.child(
+                    Field::new(
+                        "start-chat-execution-field",
+                        crate::i18n::text("ui.execution_target"),
+                        modal.execution_select.clone(),
+                    )
+                    .emphasized(true),
+                )
+            })
             .child(
                 Field::new(
                     "start-chat-working-dir-field",
@@ -2108,7 +2183,7 @@ fn runtime_leading(runtime: &str) -> SelectLeading {
 
 /// The agents a picker offers: the name, the command in monospace under it,
 /// and the provider's mark.
-fn runtime_options<'a>(
+pub(super) fn runtime_options<'a>(
     runtimes: impl IntoIterator<Item = &'a RuntimeCatalogEntry>,
 ) -> Vec<SelectOption> {
     runtimes
@@ -2254,7 +2329,7 @@ fn restore_baseline(modal: &mut StartChatModal, cx: &mut Context<NativeRoot>) {
     sync_runtime_controls(modal, cx);
 }
 
-fn sync_runtime_controls(modal: &mut StartChatModal, cx: &mut Context<NativeRoot>) {
+pub(super) fn sync_runtime_controls(modal: &mut StartChatModal, cx: &mut Context<NativeRoot>) {
     let runtime = modal.active_runtime().cloned();
     let models = runtime
         .as_ref()
@@ -2372,6 +2447,9 @@ fn set_start_chat_controls_disabled(
     modal
         .cwd
         .update(cx, |field, field_cx| field.set_disabled(disabled, field_cx));
+    modal.execution_select.update(cx, |select, select_cx| {
+        select.set_disabled(disabled, select_cx)
+    });
     modal.role_select.update(cx, |select, select_cx| {
         select.set_disabled(disabled || modal.roles.is_empty(), select_cx)
     });
@@ -2438,6 +2516,9 @@ fn start_chat_focus_order(modal: &StartChatModal, cx: &App) -> Vec<FocusHandle> 
         }
     }
     order.push(modal.title.read(cx).focus_handle());
+    if cfg!(windows) {
+        order.push(modal.execution_select.read(cx).focus_handle());
+    }
     order.push(modal.cwd.read(cx).focus_handle());
     order.push(modal.browse_focus.clone());
     order.push(modal.cancel_focus.clone());
@@ -3141,6 +3222,7 @@ pub(super) mod tests {
 
     fn test_role(handle: &str, runtime: &str) -> Role {
         Role {
+            execution_target: Default::default(),
             id: format!("role-{handle}"),
             handle: handle.into(),
             display_name: format!("Role {handle}"),
@@ -5194,6 +5276,7 @@ pub(super) mod tests {
     #[test]
     fn project_scope_seeds_cwd_before_role_and_settings_defaults() {
         let project = runner_core::protocol::project::ProjectRow {
+            execution_target: Default::default(),
             id: "project-1".into(),
             name: "Runner".into(),
             cwd: "/project".into(),

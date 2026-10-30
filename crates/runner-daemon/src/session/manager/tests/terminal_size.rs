@@ -15,6 +15,7 @@ fn mission_registration_preserves_initial_terminal_size() {
             .unwrap()
     };
     let mission = Mission {
+        execution_target: Default::default(),
         id: fresh_mission_id,
         ..mission_base
     };
@@ -60,6 +61,7 @@ fn hinted_mission_start_forks_slots_at_the_hint() {
             .unwrap()
     };
     let mission = Mission {
+        execution_target: Default::default(),
         id: fresh_mission_id,
         ..mission_base
     };
@@ -225,6 +227,7 @@ fn unhinted_mission_start_still_forks_at_default() {
             .unwrap()
     };
     let mission = Mission {
+        execution_target: Default::default(),
         id: fresh_mission_id,
         ..mission_base
     };
@@ -282,6 +285,7 @@ fn mission_registration_defaults_to_80x24_when_unsized() {
             .unwrap()
     };
     let mission = Mission {
+        execution_target: Default::default(),
         id: fresh_mission_id,
         ..mission_base
     };

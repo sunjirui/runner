@@ -116,6 +116,7 @@ fn copilot_real_binary_direct_mission_and_relaunch_resume() {
     let role = role::create(
         &db.get().unwrap(),
         role::CreateRoleInput {
+            execution_target: Default::default(),
             handle: "copilot-smoke".into(),
             display_name: "Copilot smoke".into(),
             runtime: Runtime::Copilot,
@@ -221,6 +222,7 @@ fn copilot_real_binary_direct_mission_and_relaunch_resume() {
     .unwrap()
     .slot;
     let mission = Mission {
+        execution_target: Default::default(),
         id: "COPILOTSMOKEMISSION".into(),
         crew_id: Some(crew.id),
         project_id: None,

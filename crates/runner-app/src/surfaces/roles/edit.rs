@@ -206,6 +206,7 @@ impl NativeRoot {
         form.submitting = true;
         form.error = None;
         let update = UpdateRoleInput {
+            execution_target: Some(form.execution_target.clone()),
             display_name: Some(form.display_name.read(cx).text().trim().to_owned()),
             runtime: Runtime::parse(&form.runtime),
             command: Some(form.command.read(cx).text().trim().to_owned()),

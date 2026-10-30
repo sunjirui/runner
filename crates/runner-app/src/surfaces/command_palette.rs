@@ -905,6 +905,7 @@ mod tests {
     fn chat_results_preserve_runtime_and_liveness_from_the_session() {
         let _theme = crate::theme_snapshot::ThemeGuard::new();
         let mut chat = DirectSessionEntry {
+            execution_target: Default::default(),
             session_id: "session".into(),
             project_id: None,
             role_id: Some("role".into()),

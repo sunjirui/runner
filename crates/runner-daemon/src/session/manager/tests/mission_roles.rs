@@ -291,6 +291,7 @@ fn empty_mission_mounts_adds_workers_and_remounts_without_a_crew() {
     let out = crate::daemon::block_on(crate::ops::mission::mission_start_impl_with_size(
         &core,
         runner_core::protocol::MissionStart {
+            execution_target: None,
             crew_id: None,
             scope: runner_core::protocol::ProjectScope::Root,
             title: "Empty test".into(),

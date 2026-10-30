@@ -33,6 +33,8 @@ pub mod usage;
 #[cfg(target_os = "macos")]
 pub mod wake;
 pub mod windows;
+pub mod wsl;
+pub mod wsl_session;
 
 use std::collections::HashMap;
 use std::path::PathBuf;

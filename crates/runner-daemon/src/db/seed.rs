@@ -137,6 +137,7 @@ fn insert_seed_role(
     crate::repo::role::insert(
         tx,
         &crate::repo::role::RoleRow {
+            execution_target: Default::default(),
             id: id.into(),
             handle: handle.into(),
             display_name: display_name.into(),

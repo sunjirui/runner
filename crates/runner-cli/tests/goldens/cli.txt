@@ -80,7 +80,7 @@ Runner  project-fixture  <ROOT>
 
 $ runner project list --json
 exit 0
-[{"id":"project-fixture","name":"Runner","cwd":"<ROOT>","position":0,"created_at":"2026-09-18T10:20:30Z"}]
+[{"execution_target":{"kind":"native"},"id":"project-fixture","name":"Runner","cwd":"<ROOT>","position":0,"created_at":"2026-09-18T10:20:30Z"}]
 
 $ runner project show Runner
 exit 0
@@ -90,7 +90,7 @@ PATH  <ROOT>
 
 $ runner project show Runner --json
 exit 0
-{"id":"project-fixture","name":"Runner","cwd":"<ROOT>","position":0,"created_at":"2026-09-18T10:20:30Z"}
+{"execution_target":{"kind":"native"},"id":"project-fixture","name":"Runner","cwd":"<ROOT>","position":0,"created_at":"2026-09-18T10:20:30Z"}
 
 $ runner project create New --path .
 exit 0
@@ -100,7 +100,7 @@ PATH  <ROOT>
 
 $ runner project create New --path . --json
 exit 0
-{"id":"<ULID_1>","name":"New","cwd":"<ROOT>","position":1,"created_at":"<TIMESTAMP>"}
+{"execution_target":{"kind":"native"},"id":"<ULID_1>","name":"New","cwd":"<ROOT>","position":1,"created_at":"<TIMESTAMP>"}
 
 $ runner project rename Runner Renamed
 exit 0
@@ -110,7 +110,7 @@ PATH  <ROOT>
 
 $ runner project rename Runner Renamed --json
 exit 0
-{"id":"project-fixture","name":"Renamed","cwd":"<ROOT>","position":0,"created_at":"2026-09-18T10:20:30Z"}
+{"execution_target":{"kind":"native"},"id":"project-fixture","name":"Renamed","cwd":"<ROOT>","position":0,"created_at":"2026-09-18T10:20:30Z"}
 
 $ runner project delete Runner --force
 exit 0
@@ -129,7 +129,7 @@ unused    Unused    codex    fixture-model  high    role-unused
 
 $ runner role list --json
 exit 0
-[{"id":"role-coder","handle":"coder","display_name":"Coder","runtime":"codex","command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"},{"id":"role-reviewer","handle":"reviewer","display_name":"Reviewer","runtime":"codex","command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"},{"id":"role-unused","handle":"unused","display_name":"Unused","runtime":"codex","command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}]
+[{"id":"role-coder","handle":"coder","display_name":"Coder","runtime":"codex","execution_target":{"kind":"native"},"command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"},{"id":"role-reviewer","handle":"reviewer","display_name":"Reviewer","runtime":"codex","execution_target":{"kind":"native"},"command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"},{"id":"role-unused","handle":"unused","display_name":"Unused","runtime":"codex","execution_target":{"kind":"native"},"command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}]
 
 $ runner role show coder
 exit 0
@@ -146,7 +146,7 @@ Fixture prompt
 
 $ runner role show coder --json
 exit 0
-{"id":"role-coder","handle":"coder","display_name":"Coder","runtime":"codex","command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}
+{"id":"role-coder","handle":"coder","display_name":"Coder","runtime":"codex","execution_target":{"kind":"native"},"command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}
 
 $ runner role create new --runtime codex
 exit 0
@@ -163,7 +163,7 @@ PROMPT
 
 $ runner role create new --runtime codex --json
 exit 0
-{"id":"<ULID_1>","handle":"new","display_name":"new","runtime":"codex","command":"codex","args":["--ask-for-approval","on-request","--sandbox","workspace-write"],"working_dir":null,"system_prompt":null,"env":{},"model":null,"effort":null,"codex_speed":null,"created_at":"<TIMESTAMP>","updated_at":"<TIMESTAMP>"}
+{"id":"<ULID_1>","handle":"new","display_name":"new","runtime":"codex","execution_target":{"kind":"native"},"command":"codex","args":["--ask-for-approval","on-request","--sandbox","workspace-write"],"working_dir":null,"system_prompt":null,"env":{},"model":null,"effort":null,"codex_speed":null,"created_at":"<TIMESTAMP>","updated_at":"<TIMESTAMP>"}
 
 $ runner role update coder --model updated --speed standard
 exit 0
@@ -180,7 +180,7 @@ Fixture prompt
 
 $ runner role update coder --model updated --speed standard --json
 exit 0
-{"id":"role-coder","handle":"coder","display_name":"Coder","runtime":"codex","command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"updated","effort":"high","codex_speed":"standard","created_at":"2026-09-18T10:20:30Z","updated_at":"<TIMESTAMP>"}
+{"id":"role-coder","handle":"coder","display_name":"Coder","runtime":"codex","execution_target":{"kind":"native"},"command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"updated","effort":"high","codex_speed":"standard","created_at":"2026-09-18T10:20:30Z","updated_at":"<TIMESTAMP>"}
 
 $ runner role delete unused
 exit 0
@@ -211,7 +211,7 @@ reviewer  no    reviewer  codex    fixture-model  high    fast (role)
 
 $ runner crew show Peer --json
 exit 0
-{"crew":{"id":"crew-fixture","name":"Peer","system_prompt_addendum":"Fixture crew conventions","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"},"slots":[{"id":"slot-coder","crew_id":"crew-fixture","role_id":"role-coder","slot_handle":"coder","position":0,"lead":true,"runtime_override":null,"model_override":null,"effort_override":null,"codex_speed_override":null,"added_at":"2026-09-18T10:20:30Z","role":{"id":"role-coder","handle":"coder","display_name":"Coder","runtime":"codex","command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}},{"id":"slot-reviewer","crew_id":"crew-fixture","role_id":"role-reviewer","slot_handle":"reviewer","position":1,"lead":false,"runtime_override":null,"model_override":null,"effort_override":null,"codex_speed_override":null,"added_at":"2026-09-18T10:20:30Z","role":{"id":"role-reviewer","handle":"reviewer","display_name":"Reviewer","runtime":"codex","command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}}]}
+{"crew":{"id":"crew-fixture","name":"Peer","system_prompt_addendum":"Fixture crew conventions","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"},"slots":[{"id":"slot-coder","crew_id":"crew-fixture","role_id":"role-coder","slot_handle":"coder","position":0,"lead":true,"runtime_override":null,"model_override":null,"effort_override":null,"codex_speed_override":null,"added_at":"2026-09-18T10:20:30Z","role":{"id":"role-coder","handle":"coder","display_name":"Coder","runtime":"codex","execution_target":{"kind":"native"},"command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}},{"id":"slot-reviewer","crew_id":"crew-fixture","role_id":"role-reviewer","slot_handle":"reviewer","position":1,"lead":false,"runtime_override":null,"model_override":null,"effort_override":null,"codex_speed_override":null,"added_at":"2026-09-18T10:20:30Z","role":{"id":"role-reviewer","handle":"reviewer","display_name":"Reviewer","runtime":"codex","execution_target":{"kind":"native"},"command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}}]}
 
 $ runner crew create New
 exit 0
@@ -245,7 +245,7 @@ Updated crew slots <ULID_1>
 
 $ runner crew add Peer unused --as impl --json
 exit 0
-{"id":"<ULID_1>","crew_id":"crew-fixture","role_id":"role-unused","slot_handle":"impl","position":2,"lead":false,"runtime_override":null,"model_override":null,"effort_override":null,"codex_speed_override":null,"added_at":"<TIMESTAMP>","role":{"id":"role-unused","handle":"unused","display_name":"Unused","runtime":"codex","command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}}
+{"id":"<ULID_1>","crew_id":"crew-fixture","role_id":"role-unused","slot_handle":"impl","position":2,"lead":false,"runtime_override":null,"model_override":null,"effort_override":null,"codex_speed_override":null,"added_at":"<TIMESTAMP>","role":{"id":"role-unused","handle":"unused","display_name":"Unused","runtime":"codex","execution_target":{"kind":"native"},"command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}}
 
 $ runner crew set Peer reviewer --effort medium
 exit 0
@@ -253,7 +253,7 @@ Updated crew slots slot-reviewer
 
 $ runner crew set Peer reviewer --effort medium --json
 exit 0
-{"id":"slot-reviewer","crew_id":"crew-fixture","role_id":"role-reviewer","slot_handle":"reviewer","position":1,"lead":false,"runtime_override":null,"model_override":null,"effort_override":"medium","codex_speed_override":null,"added_at":"2026-09-18T10:20:30Z","role":{"id":"role-reviewer","handle":"reviewer","display_name":"Reviewer","runtime":"codex","command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}}
+{"id":"slot-reviewer","crew_id":"crew-fixture","role_id":"role-reviewer","slot_handle":"reviewer","position":1,"lead":false,"runtime_override":null,"model_override":null,"effort_override":"medium","codex_speed_override":null,"added_at":"2026-09-18T10:20:30Z","role":{"id":"role-reviewer","handle":"reviewer","display_name":"Reviewer","runtime":"codex","execution_target":{"kind":"native"},"command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}}
 
 $ runner crew remove Peer reviewer
 exit 0
@@ -269,7 +269,7 @@ Updated crew slots slot-reviewer
 
 $ runner crew lead Peer reviewer --json
 exit 0
-{"id":"slot-reviewer","crew_id":"crew-fixture","role_id":"role-reviewer","slot_handle":"reviewer","position":1,"lead":true,"runtime_override":null,"model_override":null,"effort_override":null,"codex_speed_override":null,"added_at":"2026-09-18T10:20:30Z","role":{"id":"role-reviewer","handle":"reviewer","display_name":"Reviewer","runtime":"codex","command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}}
+{"id":"slot-reviewer","crew_id":"crew-fixture","role_id":"role-reviewer","slot_handle":"reviewer","position":1,"lead":true,"runtime_override":null,"model_override":null,"effort_override":null,"codex_speed_override":null,"added_at":"2026-09-18T10:20:30Z","role":{"id":"role-reviewer","handle":"reviewer","display_name":"Reviewer","runtime":"codex","execution_target":{"kind":"native"},"command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}}
 
 $ runner crew order Peer reviewer coder
 exit 0
@@ -277,7 +277,7 @@ Updated crew slots slot-reviewer, slot-coder
 
 $ runner crew order Peer reviewer coder --json
 exit 0
-[{"id":"slot-reviewer","crew_id":"crew-fixture","role_id":"role-reviewer","slot_handle":"reviewer","position":0,"lead":false,"runtime_override":null,"model_override":null,"effort_override":null,"codex_speed_override":null,"added_at":"2026-09-18T10:20:30Z","role":{"id":"role-reviewer","handle":"reviewer","display_name":"Reviewer","runtime":"codex","command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}},{"id":"slot-coder","crew_id":"crew-fixture","role_id":"role-coder","slot_handle":"coder","position":1,"lead":true,"runtime_override":null,"model_override":null,"effort_override":null,"codex_speed_override":null,"added_at":"2026-09-18T10:20:30Z","role":{"id":"role-coder","handle":"coder","display_name":"Coder","runtime":"codex","command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}}]
+[{"id":"slot-reviewer","crew_id":"crew-fixture","role_id":"role-reviewer","slot_handle":"reviewer","position":0,"lead":false,"runtime_override":null,"model_override":null,"effort_override":null,"codex_speed_override":null,"added_at":"2026-09-18T10:20:30Z","role":{"id":"role-reviewer","handle":"reviewer","display_name":"Reviewer","runtime":"codex","execution_target":{"kind":"native"},"command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}},{"id":"slot-coder","crew_id":"crew-fixture","role_id":"role-coder","slot_handle":"coder","position":1,"lead":true,"runtime_override":null,"model_override":null,"effort_override":null,"codex_speed_override":null,"added_at":"2026-09-18T10:20:30Z","role":{"id":"role-coder","handle":"coder","display_name":"Coder","runtime":"codex","execution_target":{"kind":"native"},"command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}}]
 
 $ runner mission list --crew Peer
 exit 0
@@ -287,7 +287,7 @@ mission-running  Active fixture   Peer  running    0/0   1     -
 
 $ runner mission list --crew Peer --json
 exit 0
-[{"session_statuses":[["session-mission",{"lifecycle":"stopped","observation":{"activity":"unavailable","source":"unavailable","outcome":null,"interactions":[],"detail":null},"exit_code":null,"error_since":null,"failed_since":null,"unread_since":null}]],"id":"mission-fixture","crew_id":"crew-fixture","project_id":"project-fixture","title":"Fixture mission","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":null,"crew_name":"Peer","pending_ask_count":1,"any_session_live":false,"all_sessions_live":false,"activity":null},{"session_statuses":[],"id":"mission-running","crew_id":"crew-fixture","project_id":null,"title":"Active fixture","status":"running","goal_override":null,"cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":null,"pinned_at":null,"archived_at":null,"crew_name":"Peer","pending_ask_count":1,"any_session_live":false,"all_sessions_live":false,"activity":null}]
+[{"execution_target":{"kind":"native"},"session_statuses":[["session-mission",{"lifecycle":"stopped","observation":{"activity":"unavailable","source":"unavailable","outcome":null,"interactions":[],"detail":null},"exit_code":null,"error_since":null,"failed_since":null,"unread_since":null}]],"id":"mission-fixture","crew_id":"crew-fixture","project_id":"project-fixture","title":"Fixture mission","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":null,"crew_name":"Peer","pending_ask_count":1,"any_session_live":false,"all_sessions_live":false,"activity":null},{"execution_target":{"kind":"native"},"session_statuses":[],"id":"mission-running","crew_id":"crew-fixture","project_id":null,"title":"Active fixture","status":"running","goal_override":null,"cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":null,"pinned_at":null,"archived_at":null,"crew_name":"Peer","pending_ask_count":1,"any_session_live":false,"all_sessions_live":false,"activity":null}]
 
 $ runner mission show mission-fixture
 exit 0
@@ -307,7 +307,7 @@ QUESTION ID                 ASKER  PROMPT  CHOICES
 
 $ runner mission show mission-fixture --json
 exit 0
-{"mission":{"id":"mission-fixture","crew_id":"crew-fixture","project_id":"project-fixture","title":"Fixture mission","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":null},"crew":{"id":"crew-fixture","name":"Peer","system_prompt_addendum":"Fixture crew conventions","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"},"sessions":[{"id":"session-mission","mission_id":"mission-fixture","role_id":"role-coder","slot_id":"slot-coder","cwd":"<ROOT>","status":"stopped","pid":null,"started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","live_title":null,"handle":"coder","runtime":"codex","lead":true,"agent_session_key":null}],"latest_session_status_by_handle":{"coder":{"state":"idle","event_id":"01K5ZCJNP00000000000000003","ts":"2026-09-18T10:20:30Z","source":"fixture"}},"pending_asks":[{"question_id":"01K5ZCJNP00000000000000002","asker":"coder","prompt":"Ship?","choices":["yes","no"],"on_behalf_of":"coder","event_id":"01K5ZCJNP00000000000000002","ts":"2026-09-18T10:20:30Z"}],"pending_ask_count":1,"live_session_count":0,"stopped_session_count":1,"crashed_session_count":0,"recent_warnings":[],"last_event_id":"01K5ZCJNP00000000000000003","last_event_offset":692,"skipped_event_count":0}
+{"mission":{"execution_target":{"kind":"native"},"id":"mission-fixture","crew_id":"crew-fixture","project_id":"project-fixture","title":"Fixture mission","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":null},"crew":{"id":"crew-fixture","name":"Peer","system_prompt_addendum":"Fixture crew conventions","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"},"sessions":[{"id":"session-mission","mission_id":"mission-fixture","role_id":"role-coder","slot_id":"slot-coder","cwd":"<ROOT>","status":"stopped","pid":null,"started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","live_title":null,"handle":"coder","runtime":"codex","lead":true,"agent_session_key":null}],"latest_session_status_by_handle":{"coder":{"state":"idle","event_id":"01K5ZCJNP00000000000000003","ts":"2026-09-18T10:20:30Z","source":"fixture"}},"pending_asks":[{"question_id":"01K5ZCJNP00000000000000002","asker":"coder","prompt":"Ship?","choices":["yes","no"],"on_behalf_of":"coder","event_id":"01K5ZCJNP00000000000000002","ts":"2026-09-18T10:20:30Z"}],"pending_ask_count":1,"live_session_count":0,"stopped_session_count":1,"crashed_session_count":0,"recent_warnings":[],"last_event_id":"01K5ZCJNP00000000000000003","last_event_offset":692,"skipped_event_count":0}
 
 $ runner mission start --crew Peer --goal ship --cwd not-a-directory
 exit 0
@@ -321,7 +321,7 @@ STARTED  <TIMESTAMP>
 
 $ runner mission start --crew Peer --goal ship --cwd not-a-directory --json
 exit 0
-{"mission":{"id":"<ULID_1>","crew_id":"crew-fixture","project_id":"project-fixture","title":"ship","status":"running","goal_override":"ship","cwd":"<ROOT>/not-a-directory","started_at":"<TIMESTAMP>","stopped_at":null,"pinned_at":null,"archived_at":null},"goal":"ship"}
+{"mission":{"execution_target":{"kind":"native"},"id":"<ULID_1>","crew_id":"crew-fixture","project_id":"project-fixture","title":"ship","status":"running","goal_override":"ship","cwd":"<ROOT>/not-a-directory","started_at":"<TIMESTAMP>","stopped_at":null,"pinned_at":null,"archived_at":null},"goal":"ship"}
 
 $ runner mission start --title 'Empty mission'
 exit 0
@@ -335,7 +335,7 @@ STARTED  <TIMESTAMP>
 
 $ runner mission start --title 'Empty mission' --json
 exit 0
-{"mission":{"id":"<ULID_1>","crew_id":null,"project_id":"project-fixture","title":"Empty mission","status":"running","goal_override":null,"cwd":"<ROOT>","started_at":"<TIMESTAMP>","stopped_at":null,"pinned_at":null,"archived_at":null},"goal":""}
+{"mission":{"execution_target":{"kind":"native"},"id":"<ULID_1>","crew_id":null,"project_id":"project-fixture","title":"Empty mission","status":"running","goal_override":null,"cwd":"<ROOT>","started_at":"<TIMESTAMP>","stopped_at":null,"pinned_at":null,"archived_at":null},"goal":""}
 
 $ runner mission start --goal 'Shared goal'
 exit 0
@@ -349,7 +349,7 @@ STARTED  <TIMESTAMP>
 
 $ runner mission start --goal 'Shared goal' --json
 exit 0
-{"mission":{"id":"<ULID_1>","crew_id":null,"project_id":"project-fixture","title":"Shared goal","status":"running","goal_override":"Shared goal","cwd":"<ROOT>","started_at":"<TIMESTAMP>","stopped_at":null,"pinned_at":null,"archived_at":null},"goal":"Shared goal"}
+{"mission":{"execution_target":{"kind":"native"},"id":"<ULID_1>","crew_id":null,"project_id":"project-fixture","title":"Shared goal","status":"running","goal_override":"Shared goal","cwd":"<ROOT>","started_at":"<TIMESTAMP>","stopped_at":null,"pinned_at":null,"archived_at":null},"goal":"Shared goal"}
 
 $ runner mission start
 exit 2
@@ -453,7 +453,7 @@ STARTED  2026-09-18T10:20:30Z
 
 $ runner mission stop mission-fixture --json
 exit 0
-{"id":"mission-fixture","crew_id":"crew-fixture","project_id":"project-fixture","title":"Fixture mission","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":null}
+{"execution_target":{"kind":"native"},"id":"mission-fixture","crew_id":"crew-fixture","project_id":"project-fixture","title":"Fixture mission","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":null}
 
 $ runner mission resume mission-fixture
 exit 1
@@ -477,7 +477,7 @@ STARTED  2026-09-18T10:20:30Z
 
 $ runner mission archive mission-fixture --json
 exit 0
-{"id":"mission-fixture","crew_id":"crew-fixture","project_id":"project-fixture","title":"Fixture mission","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":"<TIMESTAMP>"}
+{"execution_target":{"kind":"native"},"id":"mission-fixture","crew_id":"crew-fixture","project_id":"project-fixture","title":"Fixture mission","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":"<TIMESTAMP>"}
 
 $ runner mission unarchive 01K5ZCJNP00000000000000010
 exit 0
@@ -491,7 +491,7 @@ STARTED  2026-09-18T10:20:30Z
 
 $ runner mission unarchive 01K5ZCJNP00000000000000010 --json
 exit 0
-{"id":"01K5ZCJNP00000000000000010","crew_id":"crew-fixture","project_id":null,"title":"Archived mission","status":"completed","goal_override":null,"cwd":null,"started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":null}
+{"execution_target":{"kind":"native"},"id":"01K5ZCJNP00000000000000010","crew_id":"crew-fixture","project_id":null,"title":"Archived mission","status":"completed","goal_override":null,"cwd":null,"started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":null}
 
 $ runner mission rename mission-fixture Renamed
 exit 0
@@ -505,7 +505,7 @@ STARTED  2026-09-18T10:20:30Z
 
 $ runner mission rename mission-fixture Renamed --json
 exit 0
-{"id":"mission-fixture","crew_id":"crew-fixture","project_id":"project-fixture","title":"Renamed","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":null}
+{"execution_target":{"kind":"native"},"id":"mission-fixture","crew_id":"crew-fixture","project_id":"project-fixture","title":"Renamed","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":null}
 
 $ runner mission pin mission-fixture
 exit 0
@@ -519,7 +519,7 @@ STARTED  2026-09-18T10:20:30Z
 
 $ runner mission pin mission-fixture --json
 exit 0
-{"id":"mission-fixture","crew_id":"crew-fixture","project_id":"project-fixture","title":"Fixture mission","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":"<TIMESTAMP>","archived_at":null}
+{"execution_target":{"kind":"native"},"id":"mission-fixture","crew_id":"crew-fixture","project_id":"project-fixture","title":"Fixture mission","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":"<TIMESTAMP>","archived_at":null}
 
 $ runner mission unpin mission-fixture
 exit 0
@@ -533,7 +533,7 @@ STARTED  2026-09-18T10:20:30Z
 
 $ runner mission unpin mission-fixture --json
 exit 0
-{"id":"mission-fixture","crew_id":"crew-fixture","project_id":"project-fixture","title":"Fixture mission","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":null}
+{"execution_target":{"kind":"native"},"id":"mission-fixture","crew_id":"crew-fixture","project_id":"project-fixture","title":"Fixture mission","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":null}
 
 $ runner mission move mission-fixture --unfile
 exit 0
@@ -547,7 +547,7 @@ STARTED  2026-09-18T10:20:30Z
 
 $ runner mission move mission-fixture --unfile --json
 exit 0
-{"id":"mission-fixture","crew_id":"crew-fixture","project_id":null,"title":"Fixture mission","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":null}
+{"execution_target":{"kind":"native"},"id":"mission-fixture","crew_id":"crew-fixture","project_id":null,"title":"Fixture mission","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":null}
 
 $ runner mission feed mission-fixture --oldest-first
 exit 0
@@ -596,7 +596,7 @@ session-fixture  codex    coder  Fixture chat  stopped  unavailable  <ROOT>/not-
 
 $ runner session list --json
 exit 0
-[{"session_id":"session-fixture","project_id":"project-fixture","role_id":"role-coder","handle":"coder","agent_runtime":"codex","agent_command":"missing-fixture-agent","agent_model":"fixture-model","agent_effort":"high","display_name":"Coder","status":"stopped","title":"Fixture chat","live_title":null,"cwd":"<ROOT>/not-a-directory","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","resumable":false,"native_fork":true,"forkable":false,"agent_session_key":null,"pinned":false,"archived_at":null,"activity":"unavailable"}]
+[{"execution_target":{"kind":"native"},"session_id":"session-fixture","project_id":"project-fixture","role_id":"role-coder","handle":"coder","agent_runtime":"codex","agent_command":"missing-fixture-agent","agent_model":"fixture-model","agent_effort":"high","display_name":"Coder","status":"stopped","title":"Fixture chat","live_title":null,"cwd":"<ROOT>/not-a-directory","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","resumable":false,"native_fork":true,"forkable":false,"agent_session_key":null,"pinned":false,"archived_at":null,"activity":"unavailable"}]
 
 $ runner session show session-fixture
 exit 0
@@ -620,7 +620,7 @@ CWD           <ROOT>/not-a-directory
 
 $ runner session show session-fixture --json
 exit 0
-{"session_id":"session-fixture","project_id":"project-fixture","role_id":"role-coder","handle":"coder","agent_runtime":"codex","agent_command":"missing-fixture-agent","agent_model":"fixture-model","agent_effort":"high","display_name":"Coder","status":"stopped","title":"Fixture chat","live_title":null,"cwd":"<ROOT>/not-a-directory","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","resumable":false,"native_fork":true,"forkable":false,"agent_session_key":null,"pinned":false,"archived_at":null,"agent_speed":"fast","agent_status":{"lifecycle":"starting","observation":{"activity":"unavailable","source":"unavailable","outcome":null,"interactions":[],"detail":null},"exit_code":null,"error_since":null,"failed_since":null,"unread_since":null},"activity":null}
+{"execution_target":{"kind":"native"},"session_id":"session-fixture","project_id":"project-fixture","role_id":"role-coder","handle":"coder","agent_runtime":"codex","agent_command":"missing-fixture-agent","agent_model":"fixture-model","agent_effort":"high","display_name":"Coder","status":"stopped","title":"Fixture chat","live_title":null,"cwd":"<ROOT>/not-a-directory","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","resumable":false,"native_fork":true,"forkable":false,"agent_session_key":null,"pinned":false,"archived_at":null,"agent_speed":"fast","agent_status":{"lifecycle":"starting","observation":{"activity":"unavailable","source":"unavailable","outcome":null,"interactions":[],"detail":null},"exit_code":null,"error_since":null,"failed_since":null,"unread_since":null},"activity":null}
 
 $ runner session stop session-fixture
 exit 0
@@ -727,7 +727,7 @@ updated_at     2026-09-18T10:20:30Z
 
 $ runner call role_get '{"id":"role-coder"}' --json
 exit 0
-{"id":"role-coder","handle":"coder","display_name":"Coder","runtime":"codex","command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}
+{"id":"role-coder","handle":"coder","display_name":"Coder","runtime":"codex","execution_target":{"kind":"native"},"command":"missing-fixture-agent","args":[],"working_dir":null,"system_prompt":"Fixture prompt","env":{},"model":"fixture-model","effort":"high","codex_speed":"fast","created_at":"2026-09-18T10:20:30Z","updated_at":"2026-09-18T10:20:30Z"}
 
 $ runner msg post Hello --mission mission-running
 exit 0
@@ -872,7 +872,7 @@ STARTED  2026-09-18T10:20:30Z
 
 $ runner mission move mission-fixture --project Runner --json
 exit 0
-{"id":"mission-fixture","crew_id":"crew-fixture","project_id":"project-fixture","title":"Fixture mission","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":null}
+{"execution_target":{"kind":"native"},"id":"mission-fixture","crew_id":"crew-fixture","project_id":"project-fixture","title":"Fixture mission","status":"completed","goal_override":"Fixture goal","cwd":"<ROOT>","started_at":"2026-09-18T10:20:30Z","stopped_at":"2026-09-18T10:20:30Z","pinned_at":null,"archived_at":null}
 
 $ runner role create coder
 exit 2
@@ -1069,7 +1069,6 @@ CONTEXT
 RESERVED FOR #562
   spawn, ps, wait, stop <handle>, done
 
-
 # context: not running
 $ runner help agents
 exit 0
@@ -1170,7 +1169,6 @@ IDENTITY
   Outside a mission with no --as, the caller is the person at the app.
   Do not use --as to speak as another agent's slot; it exists for a slot you hold.
 
-
 # context: not running
 $ runner help mission
 exit 0
@@ -1188,16 +1186,19 @@ Arguments:
   <ROLE>     
 
 Options:
-      --handle <HANDLE>        
-      --json                   Print the tool result as exact JSON
-  -q                           Print only result IDs
-      --runtime <RUNTIME>      
-      --model <MODEL>          
-      --effort <EFFORT>        
-      --speed <SPEED>          [possible values: inherit, standard, fast]
-      --task <TASK>            
-      --task-file <TASK_FILE>  
-  -h, --help                   Print help
+      --handle <HANDLE>          
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --runtime <RUNTIME>        
+      --model <MODEL>            
+      --effort <EFFORT>          
+      --speed <SPEED>            [possible values: inherit, standard, fast]
+      --task <TASK>              
+      --task-file <TASK_FILE>    
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner mission remove-role --help
@@ -1211,9 +1212,12 @@ Arguments:
   <HANDLE>   
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner --help
@@ -1238,10 +1242,13 @@ Commands:
   help     Print the command reference
 
 Options:
-      --json     Print the tool result as exact JSON
-  -q             Print only result IDs
-  -h, --help     Print help
-  -V, --version  Print version
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
+  -V, --version                  Print version
 
 # context: not running
 $ runner daemon --help
@@ -1255,9 +1262,12 @@ Commands:
   stop    
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner project --help
@@ -1274,9 +1284,12 @@ Commands:
   delete  Delete a project and archive its members
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner role --help
@@ -1293,9 +1306,12 @@ Commands:
   delete  Delete a role
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner crew --help
@@ -1317,9 +1333,12 @@ Commands:
   order   Reorder every crew slot by handle
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner mission --help
@@ -1346,9 +1365,12 @@ Commands:
   answer       Answer a pending person question
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner chat --help
@@ -1361,9 +1383,12 @@ Commands:
   start  Start a role-backed or runtime-only direct chat
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner session --help
@@ -1381,9 +1406,12 @@ Commands:
   restart  Restart a mission session with a fresh conversation
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner msg --help
@@ -1397,9 +1425,12 @@ Commands:
   read  Read new inbox messages; --all shows crew history since joining
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner help --help
@@ -1412,9 +1443,12 @@ Arguments:
   [TOPIC]  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner status --help
@@ -1424,9 +1458,12 @@ Check whether Runner is running
 Usage: runner status [OPTIONS]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner daemon status --help
@@ -1434,9 +1471,12 @@ exit 0
 Usage: runner daemon status [OPTIONS]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner daemon stop --help
@@ -1444,9 +1484,12 @@ exit 0
 Usage: runner daemon stop [OPTIONS]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner project list --help
@@ -1456,9 +1499,12 @@ List projects
 Usage: runner project list [OPTIONS]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner project show --help
@@ -1471,9 +1517,12 @@ Arguments:
   <PROJECT>  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner project create --help
@@ -1486,10 +1535,13 @@ Arguments:
   <NAME>  
 
 Options:
-      --json         Print the tool result as exact JSON
-      --path <PATH>  Project directory; defaults to the current directory
-  -q                 Print only result IDs
-  -h, --help         Print help
+      --json                     Print the tool result as exact JSON
+      --path <PATH>              Project directory; defaults to the current directory
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner project rename --help
@@ -1503,9 +1555,12 @@ Arguments:
   <NAME>     
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner project delete --help
@@ -1518,10 +1573,13 @@ Arguments:
   <PROJECT>  
 
 Options:
-      --force  Allow deletion when the project has running members
-      --json   Print the tool result as exact JSON
-  -q           Print only result IDs
-  -h, --help   Print help
+      --force                    Allow deletion when the project has running members
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner role list --help
@@ -1531,9 +1589,12 @@ List reusable roles
 Usage: runner role list [OPTIONS]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner role show --help
@@ -1546,9 +1607,12 @@ Arguments:
   <HANDLE>  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner role create --help
@@ -1574,6 +1638,9 @@ Options:
       --arg <ARGS>                 Append one runtime argument; repeat for multiple arguments
       --env <ENV>                  Set one KEY=VALUE environment entry; repeat as needed
       --cwd <CWD>                  Working directory; pass an empty value to clear it
+      --wsl-distro <WSL_DISTRO>    Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>        Linux user in the selected distribution
+      --native                     Use the native host for new work, overriding a role or WSL terminal default
   -h, --help                       Print help
 
 # context: not running
@@ -1600,6 +1667,9 @@ Options:
       --arg <ARGS>                 Append one runtime argument; repeat for multiple arguments
       --env <ENV>                  Set one KEY=VALUE environment entry; repeat as needed
       --cwd <CWD>                  Working directory; pass an empty value to clear it
+      --wsl-distro <WSL_DISTRO>    Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>        Linux user in the selected distribution
+      --native                     Use the native host for new work, overriding a role or WSL terminal default
   -h, --help                       Print help
 
 # context: not running
@@ -1613,9 +1683,12 @@ Arguments:
   <HANDLE>  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner crew list --help
@@ -1625,9 +1698,12 @@ List crews
 Usage: runner crew list [OPTIONS]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner crew show --help
@@ -1640,9 +1716,12 @@ Arguments:
   <CREW>  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner crew create --help
@@ -1655,10 +1734,20 @@ Arguments:
   <NAME>  
 
 Options:
-      --conventions-file <CONVENTIONS_FILE>  Read crew conventions from a file, or - for stdin
-      --json                                 Print the tool result as exact JSON
-  -q                                         Print only result IDs
-  -h, --help                                 Print help
+      --conventions-file <CONVENTIONS_FILE>
+          Read crew conventions from a file, or - for stdin
+      --json
+          Print the tool result as exact JSON
+  -q
+          Print only result IDs
+      --wsl-distro <WSL_DISTRO>
+          Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>
+          Linux user in the selected distribution
+      --native
+          Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help
+          Print help
 
 # context: not running
 $ runner crew update --help
@@ -1671,11 +1760,22 @@ Arguments:
   <CREW>  
 
 Options:
-      --json                                 Print the tool result as exact JSON
-      --name <NAME>                          New crew name
-      --conventions-file <CONVENTIONS_FILE>  Read crew conventions from a file, or - for stdin
-  -q                                         Print only result IDs
-  -h, --help                                 Print help
+      --json
+          Print the tool result as exact JSON
+      --name <NAME>
+          New crew name
+      --conventions-file <CONVENTIONS_FILE>
+          Read crew conventions from a file, or - for stdin
+  -q
+          Print only result IDs
+      --wsl-distro <WSL_DISTRO>
+          Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>
+          Linux user in the selected distribution
+      --native
+          Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help
+          Print help
 
 # context: not running
 $ runner crew delete --help
@@ -1688,9 +1788,12 @@ Arguments:
   <CREW>  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner crew add --help
@@ -1704,14 +1807,17 @@ Arguments:
   <ROLE>  
 
 Options:
-      --as <HANDLE>        Assign this in-crew handle
-      --json               Print the tool result as exact JSON
-  -q                       Print only result IDs
-      --runtime <RUNTIME>  Override the role runtime for this slot
-      --model <MODEL>      Override the role model for this slot
-      --effort <EFFORT>    Override the role effort for this slot
-      --speed <SPEED>      Codex Speed override: inherit, standard, or fast [possible values: inherit, standard, fast]
-  -h, --help               Print help
+      --as <HANDLE>              Assign this in-crew handle
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --runtime <RUNTIME>        Override the role runtime for this slot
+      --model <MODEL>            Override the role model for this slot
+      --effort <EFFORT>          Override the role effort for this slot
+      --speed <SPEED>            Codex Speed override: inherit, standard, or fast [possible values: inherit, standard, fast]
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner crew set --help
@@ -1725,14 +1831,17 @@ Arguments:
   <HANDLE>  
 
 Options:
-      --as <NEW_HANDLE>    Rename the in-crew handle
-      --json               Print the tool result as exact JSON
-  -q                       Print only result IDs
-      --runtime <RUNTIME>  Override the runtime; pass an empty value to inherit
-      --model <MODEL>      Override the model; pass an empty value to inherit
-      --effort <EFFORT>    Override the effort; pass an empty value to inherit
-      --speed <SPEED>      Codex Speed override: inherit, standard, or fast [possible values: inherit, standard, fast]
-  -h, --help               Print help
+      --as <NEW_HANDLE>          Rename the in-crew handle
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --runtime <RUNTIME>        Override the runtime; pass an empty value to inherit
+      --model <MODEL>            Override the model; pass an empty value to inherit
+      --effort <EFFORT>          Override the effort; pass an empty value to inherit
+      --speed <SPEED>            Codex Speed override: inherit, standard, or fast [possible values: inherit, standard, fast]
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner crew remove --help
@@ -1746,9 +1855,12 @@ Arguments:
   <HANDLE>  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner crew lead --help
@@ -1762,9 +1874,12 @@ Arguments:
   <HANDLE>  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner crew order --help
@@ -1778,9 +1893,12 @@ Arguments:
   <HANDLES>...  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner mission list --help
@@ -1790,10 +1908,13 @@ List active missions
 Usage: runner mission list [OPTIONS]
 
 Options:
-      --crew <CREW>  Filter by crew ID or exact name
-      --json         Print the tool result as exact JSON
-  -q                 Print only result IDs
-  -h, --help         Print help
+      --crew <CREW>              Filter by crew ID or exact name
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner mission show --help
@@ -1806,9 +1927,12 @@ Arguments:
   [MISSION]  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner mission start --help
@@ -1818,15 +1942,18 @@ Start a mission
 Usage: runner mission start [OPTIONS]
 
 Options:
-      --crew <CREW>            Crew ID or exact name
-      --json                   Print the tool result as exact JSON
-      --goal <GOAL>            Mission goal text
-  -q                           Print only result IDs
-      --goal-file <GOAL_FILE>  Read the mission goal from a file, or - for stdin
-      --title <TITLE>          Mission title; defaults from the goal or crew name
-      --project <PROJECT>      Project ID or exact name whose directory the mission uses
-      --cwd <CWD>              Mission directory; defaults to the current directory
-  -h, --help                   Print help
+      --crew <CREW>              Crew ID or exact name
+      --json                     Print the tool result as exact JSON
+      --goal <GOAL>              Mission goal text
+  -q                             Print only result IDs
+      --goal-file <GOAL_FILE>    Read the mission goal from a file, or - for stdin
+      --title <TITLE>            Mission title; defaults from the goal or crew name
+      --project <PROJECT>        Project ID or exact name whose directory the mission uses
+      --cwd <CWD>                Mission directory; defaults to the current directory
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner mission stop --help
@@ -1839,9 +1966,12 @@ Arguments:
   [MISSION]  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner mission resume --help
@@ -1854,9 +1984,12 @@ Arguments:
   [MISSION]  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner mission archive --help
@@ -1869,9 +2002,12 @@ Arguments:
   [MISSION]  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner mission unarchive --help
@@ -1884,9 +2020,12 @@ Arguments:
   [MISSION]  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner mission rename --help
@@ -1900,9 +2039,12 @@ Arguments:
   <TITLE>    
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner mission pin --help
@@ -1915,9 +2057,12 @@ Arguments:
   [MISSION]  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner mission unpin --help
@@ -1930,9 +2075,12 @@ Arguments:
   [MISSION]  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner mission move --help
@@ -1945,11 +2093,14 @@ Arguments:
   [MISSION]  
 
 Options:
-      --json               Print the tool result as exact JSON
-      --project <PROJECT>  Destination project ID or exact name
-  -q                       Print only result IDs
-      --unfile             Remove the mission from its project
-  -h, --help               Print help
+      --json                     Print the tool result as exact JSON
+      --project <PROJECT>        Destination project ID or exact name
+  -q                             Print only result IDs
+      --unfile                   Remove the mission from its project
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner mission feed --help
@@ -1962,16 +2113,19 @@ Arguments:
   [MISSION]  
 
 Options:
-      --follow         Follow pushed events until the mission ends or all its sessions exit
-      --json           Print the tool result as exact JSON
-  -q                   Print only result IDs
-      --since <SINCE>  Start after this byte offset
-      --limit <LIMIT>  Maximum events to return
-      --oldest-first   Ask the backend for chronological order
-      --types <TYPES>  Comma-separated signal kinds (or message) to include
-      --from <FROM>    Include only events from this handle
-      --all            Include session_status and inbox_read noise
-  -h, --help           Print help
+      --follow                   Follow pushed events until the mission ends or all its sessions exit
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --since <SINCE>            Start after this byte offset
+      --limit <LIMIT>            Maximum events to return
+      --oldest-first             Ask the backend for chronological order
+      --types <TYPES>            Comma-separated signal kinds (or message) to include
+      --from <FROM>              Include only events from this handle
+      --all                      Include session_status and inbox_read noise
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner mission answer --help
@@ -1986,9 +2140,12 @@ Arguments:
   <CHOICE>       
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner chat start --help
@@ -2001,15 +2158,18 @@ Arguments:
   [ROLE]  
 
 Options:
-      --json               Print the tool result as exact JSON
-      --runtime <RUNTIME>  Start a role-free chat with this runtime
-      --model <MODEL>      Model override
-  -q                       Print only result IDs
-      --effort <EFFORT>    Reasoning effort override
-      --speed <SPEED>      Codex Speed override: inherit, standard, or fast [possible values: inherit, standard, fast]
-      --project <PROJECT>  Project ID or exact name whose directory the chat uses
-      --cwd <CWD>          Chat directory; defaults to the current directory
-  -h, --help               Print help
+      --json                     Print the tool result as exact JSON
+      --runtime <RUNTIME>        Start a role-free chat with this runtime
+      --model <MODEL>            Model override
+  -q                             Print only result IDs
+      --effort <EFFORT>          Reasoning effort override
+      --speed <SPEED>            Codex Speed override: inherit, standard, or fast [possible values: inherit, standard, fast]
+      --project <PROJECT>        Project ID or exact name whose directory the chat uses
+      --cwd <CWD>                Chat directory; defaults to the current directory
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner session list --help
@@ -2019,9 +2179,12 @@ List recent direct-chat sessions
 Usage: runner session list [OPTIONS]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner session show --help
@@ -2034,9 +2197,12 @@ Arguments:
   <SESSION>  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner session stop --help
@@ -2049,9 +2215,12 @@ Arguments:
   <SESSION>  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner session archive --help
@@ -2064,9 +2233,12 @@ Arguments:
   <SESSION>  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner session resume --help
@@ -2079,9 +2251,12 @@ Arguments:
   <SESSION>  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner session restart --help
@@ -2094,9 +2269,12 @@ Arguments:
   <SESSION>  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner msg post --help
@@ -2109,12 +2287,15 @@ Arguments:
   <TEXT>  
 
 Options:
-      --json               Print the tool result as exact JSON
-      --to <TO>            Address a roster handle; repeat for several recipients
-      --mission <MISSION>  Mission ID or unique prefix; required outside a mission
-  -q                       Print only result IDs
-      --as <FROM>          Attribute the message to this roster handle
-  -h, --help               Print help
+      --json                     Print the tool result as exact JSON
+      --to <TO>                  Address a roster handle; repeat for several recipients
+      --mission <MISSION>        Mission ID or unique prefix; required outside a mission
+  -q                             Print only result IDs
+      --as <FROM>                Attribute the message to this roster handle
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner msg read --help
@@ -2124,13 +2305,16 @@ Read new inbox messages; --all shows crew history since joining
 Usage: runner msg read [OPTIONS]
 
 Options:
-      --all                Show all crew messages since joining
-      --json               Print the tool result as exact JSON
-  -q                       Print only result IDs
-      --since <SINCE>      Return messages after this event ID without marking them read
-      --from <FROM>        Filter by sender handle
-      --mission <MISSION>  Mission reference; only the caller's mission is supported
-  -h, --help               Print help
+      --all                      Show all crew messages since joining
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --since <SINCE>            Return messages after this event ID without marking them read
+      --from <FROM>              Filter by sender handle
+      --mission <MISSION>        Mission reference; only the caller's mission is supported
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner signal --help
@@ -2143,12 +2327,15 @@ Arguments:
   <TYPE>  Signal type from the Runner coordination protocol
 
 Options:
-      --json               Print the tool result as exact JSON
-      --payload <PAYLOAD>  JSON object carried by the signal
-      --mission <MISSION>  Mission ID or unique prefix; required outside a mission
-  -q                       Print only result IDs
-      --as <FROM>          Attribute the signal to this roster handle
-  -h, --help               Print help
+      --json                     Print the tool result as exact JSON
+      --payload <PAYLOAD>        JSON object carried by the signal
+      --mission <MISSION>        Mission ID or unique prefix; required outside a mission
+  -q                             Print only result IDs
+      --as <FROM>                Attribute the signal to this roster handle
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner ask --help
@@ -2161,14 +2348,17 @@ Arguments:
   [QUESTION]  Question for the mission lead
 
 Options:
-      --context <CONTEXT>  Legacy context flag; direct lead questions use msg post --to
-      --json               Print the tool result as exact JSON
-      --human <HUMAN>      Ask the person at the app
-  -q                       Print only result IDs
-      --choices <CHOICES>  Comma-separated choices for --human
-      --mission <MISSION>  Mission ID or unique prefix; required outside a mission
-      --as <FROM>          Attribute the question to this roster handle
-  -h, --help               Print help
+      --context <CONTEXT>        Legacy context flag; direct lead questions use msg post --to
+      --json                     Print the tool result as exact JSON
+      --human <HUMAN>            Ask the person at the app
+  -q                             Print only result IDs
+      --choices <CHOICES>        Comma-separated choices for --human
+      --mission <MISSION>        Mission ID or unique prefix; required outside a mission
+      --as <FROM>                Attribute the question to this roster handle
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 
 # context: not running
 $ runner call --help
@@ -2182,7 +2372,9 @@ Arguments:
   [ARGUMENTS]  
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
-
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help

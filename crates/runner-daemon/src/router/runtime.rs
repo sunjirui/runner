@@ -9,7 +9,7 @@ pub const FIRST_TURN_ARGV_MAX_BYTES: usize = 32 * 1024;
 /// `assigned_key` into `sessions.agent_session_key` so the next spawn for
 /// the same scope (direct: same role; mission: same (mission, role))
 /// can pass it back via `prior_key`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ResumePlan {
     /// Args to splice into the spawn command. For claude-code these
     /// are trailing flags; for codex and trae `resume <uuid>` is a subcommand

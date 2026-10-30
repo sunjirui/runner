@@ -224,10 +224,13 @@ Commands:
   help     Print the command reference
 
 Options:
-      --json     Print the tool result as exact JSON
-  -q             Print only result IDs
-  -h, --help     Print help
-  -V, --version  Print version
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
+  -V, --version                  Print version
 ```
 
 ## runner daemon
@@ -242,9 +245,12 @@ Commands:
   stop
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner daemon status
@@ -253,9 +259,12 @@ Options:
 Usage: runner daemon status [OPTIONS]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner daemon stop
@@ -264,9 +273,12 @@ Options:
 Usage: runner daemon stop [OPTIONS]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner status
@@ -277,9 +289,12 @@ Check whether Runner is running
 Usage: runner status [OPTIONS]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner project
@@ -297,9 +312,12 @@ Commands:
   delete  Delete a project and archive its members
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner project list
@@ -310,9 +328,12 @@ List projects
 Usage: runner project list [OPTIONS]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner project show
@@ -326,9 +347,12 @@ Arguments:
   <PROJECT>
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner project create
@@ -342,10 +366,13 @@ Arguments:
   <NAME>
 
 Options:
-      --json         Print the tool result as exact JSON
-      --path <PATH>  Project directory; defaults to the current directory
-  -q                 Print only result IDs
-  -h, --help         Print help
+      --json                     Print the tool result as exact JSON
+      --path <PATH>              Project directory; defaults to the current directory
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner project rename
@@ -360,9 +387,12 @@ Arguments:
   <NAME>
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner project delete
@@ -376,10 +406,13 @@ Arguments:
   <PROJECT>
 
 Options:
-      --force  Allow deletion when the project has running members
-      --json   Print the tool result as exact JSON
-  -q           Print only result IDs
-  -h, --help   Print help
+      --force                    Allow deletion when the project has running members
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner role
@@ -397,9 +430,12 @@ Commands:
   delete  Delete a role
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner role list
@@ -410,9 +446,12 @@ List reusable roles
 Usage: runner role list [OPTIONS]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner role show
@@ -426,9 +465,12 @@ Arguments:
   <HANDLE>
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner role create
@@ -455,6 +497,9 @@ Options:
       --arg <ARGS>                 Append one runtime argument; repeat for multiple arguments
       --env <ENV>                  Set one KEY=VALUE environment entry; repeat as needed
       --cwd <CWD>                  Working directory; pass an empty value to clear it
+      --wsl-distro <WSL_DISTRO>    Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>        Linux user in the selected distribution
+      --native                     Use the native host for new work, overriding a role or WSL terminal default
   -h, --help                       Print help
 ```
 
@@ -482,6 +527,9 @@ Options:
       --arg <ARGS>                 Append one runtime argument; repeat for multiple arguments
       --env <ENV>                  Set one KEY=VALUE environment entry; repeat as needed
       --cwd <CWD>                  Working directory; pass an empty value to clear it
+      --wsl-distro <WSL_DISTRO>    Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>        Linux user in the selected distribution
+      --native                     Use the native host for new work, overriding a role or WSL terminal default
   -h, --help                       Print help
 ```
 
@@ -496,9 +544,12 @@ Arguments:
   <HANDLE>
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner crew
@@ -521,9 +572,12 @@ Commands:
   order   Reorder every crew slot by handle
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner crew list
@@ -534,9 +588,12 @@ List crews
 Usage: runner crew list [OPTIONS]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner crew show
@@ -550,9 +607,12 @@ Arguments:
   <CREW>
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner crew create
@@ -566,10 +626,20 @@ Arguments:
   <NAME>
 
 Options:
-      --conventions-file <CONVENTIONS_FILE>  Read crew conventions from a file, or - for stdin
-      --json                                 Print the tool result as exact JSON
-  -q                                         Print only result IDs
-  -h, --help                                 Print help
+      --conventions-file <CONVENTIONS_FILE>
+          Read crew conventions from a file, or - for stdin
+      --json
+          Print the tool result as exact JSON
+  -q
+          Print only result IDs
+      --wsl-distro <WSL_DISTRO>
+          Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>
+          Linux user in the selected distribution
+      --native
+          Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help
+          Print help
 ```
 
 ## runner crew update
@@ -583,11 +653,22 @@ Arguments:
   <CREW>
 
 Options:
-      --json                                 Print the tool result as exact JSON
-      --name <NAME>                          New crew name
-      --conventions-file <CONVENTIONS_FILE>  Read crew conventions from a file, or - for stdin
-  -q                                         Print only result IDs
-  -h, --help                                 Print help
+      --json
+          Print the tool result as exact JSON
+      --name <NAME>
+          New crew name
+      --conventions-file <CONVENTIONS_FILE>
+          Read crew conventions from a file, or - for stdin
+  -q
+          Print only result IDs
+      --wsl-distro <WSL_DISTRO>
+          Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>
+          Linux user in the selected distribution
+      --native
+          Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help
+          Print help
 ```
 
 ## runner crew delete
@@ -601,9 +682,12 @@ Arguments:
   <CREW>
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner crew add
@@ -618,14 +702,17 @@ Arguments:
   <ROLE>
 
 Options:
-      --as <HANDLE>        Assign this in-crew handle
-      --json               Print the tool result as exact JSON
-  -q                       Print only result IDs
-      --runtime <RUNTIME>  Override the role runtime for this slot
-      --model <MODEL>      Override the role model for this slot
-      --effort <EFFORT>    Override the role effort for this slot
-      --speed <SPEED>      Codex Speed override: inherit, standard, or fast [possible values: inherit, standard, fast]
-  -h, --help               Print help
+      --as <HANDLE>              Assign this in-crew handle
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --runtime <RUNTIME>        Override the role runtime for this slot
+      --model <MODEL>            Override the role model for this slot
+      --effort <EFFORT>          Override the role effort for this slot
+      --speed <SPEED>            Codex Speed override: inherit, standard, or fast [possible values: inherit, standard, fast]
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner crew set
@@ -640,14 +727,17 @@ Arguments:
   <HANDLE>
 
 Options:
-      --as <NEW_HANDLE>    Rename the in-crew handle
-      --json               Print the tool result as exact JSON
-  -q                       Print only result IDs
-      --runtime <RUNTIME>  Override the runtime; pass an empty value to inherit
-      --model <MODEL>      Override the model; pass an empty value to inherit
-      --effort <EFFORT>    Override the effort; pass an empty value to inherit
-      --speed <SPEED>      Codex Speed override: inherit, standard, or fast [possible values: inherit, standard, fast]
-  -h, --help               Print help
+      --as <NEW_HANDLE>          Rename the in-crew handle
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --runtime <RUNTIME>        Override the runtime; pass an empty value to inherit
+      --model <MODEL>            Override the model; pass an empty value to inherit
+      --effort <EFFORT>          Override the effort; pass an empty value to inherit
+      --speed <SPEED>            Codex Speed override: inherit, standard, or fast [possible values: inherit, standard, fast]
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner crew remove
@@ -662,9 +752,12 @@ Arguments:
   <HANDLE>
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner crew lead
@@ -679,9 +772,12 @@ Arguments:
   <HANDLE>
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner crew order
@@ -696,9 +792,12 @@ Arguments:
   <HANDLES>...
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner mission
@@ -726,9 +825,12 @@ Commands:
   answer       Answer a pending person question
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner mission list
@@ -739,10 +841,13 @@ List active missions
 Usage: runner mission list [OPTIONS]
 
 Options:
-      --crew <CREW>  Filter by crew ID or exact name
-      --json         Print the tool result as exact JSON
-  -q                 Print only result IDs
-  -h, --help         Print help
+      --crew <CREW>              Filter by crew ID or exact name
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner mission show
@@ -756,9 +861,12 @@ Arguments:
   [MISSION]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner mission start
@@ -769,15 +877,18 @@ Start a mission
 Usage: runner mission start [OPTIONS]
 
 Options:
-      --crew <CREW>            Crew ID or exact name
-      --json                   Print the tool result as exact JSON
-      --goal <GOAL>            Mission goal text
-  -q                           Print only result IDs
-      --goal-file <GOAL_FILE>  Read the mission goal from a file, or - for stdin
-      --title <TITLE>          Mission title; defaults from the goal or crew name
-      --project <PROJECT>      Project ID or exact name whose directory the mission uses
-      --cwd <CWD>              Mission directory; defaults to the current directory
-  -h, --help                   Print help
+      --crew <CREW>              Crew ID or exact name
+      --json                     Print the tool result as exact JSON
+      --goal <GOAL>              Mission goal text
+  -q                             Print only result IDs
+      --goal-file <GOAL_FILE>    Read the mission goal from a file, or - for stdin
+      --title <TITLE>            Mission title; defaults from the goal or crew name
+      --project <PROJECT>        Project ID or exact name whose directory the mission uses
+      --cwd <CWD>                Mission directory; defaults to the current directory
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner mission add-role
@@ -793,15 +904,18 @@ Arguments:
 
 Options:
       --handle <HANDLE>
-      --json                   Print the tool result as exact JSON
-  -q                           Print only result IDs
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
       --runtime <RUNTIME>
       --model <MODEL>
       --effort <EFFORT>
-      --speed <SPEED>          [possible values: inherit, standard, fast]
+      --speed <SPEED>            [possible values: inherit, standard, fast]
       --task <TASK>
       --task-file <TASK_FILE>
-  -h, --help                   Print help
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner mission remove-role
@@ -816,9 +930,12 @@ Arguments:
   <HANDLE>
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner mission stop
@@ -832,9 +949,12 @@ Arguments:
   [MISSION]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner mission resume
@@ -848,9 +968,12 @@ Arguments:
   [MISSION]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner mission archive
@@ -864,9 +987,12 @@ Arguments:
   [MISSION]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner mission unarchive
@@ -880,9 +1006,12 @@ Arguments:
   [MISSION]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner mission rename
@@ -897,9 +1026,12 @@ Arguments:
   <TITLE>
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner mission pin
@@ -913,9 +1045,12 @@ Arguments:
   [MISSION]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner mission unpin
@@ -929,9 +1064,12 @@ Arguments:
   [MISSION]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner mission move
@@ -945,11 +1083,14 @@ Arguments:
   [MISSION]
 
 Options:
-      --json               Print the tool result as exact JSON
-      --project <PROJECT>  Destination project ID or exact name
-  -q                       Print only result IDs
-      --unfile             Remove the mission from its project
-  -h, --help               Print help
+      --json                     Print the tool result as exact JSON
+      --project <PROJECT>        Destination project ID or exact name
+  -q                             Print only result IDs
+      --unfile                   Remove the mission from its project
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner mission feed
@@ -963,16 +1104,19 @@ Arguments:
   [MISSION]
 
 Options:
-      --follow         Follow pushed events until the mission ends or all its sessions exit
-      --json           Print the tool result as exact JSON
-  -q                   Print only result IDs
-      --since <SINCE>  Start after this byte offset
-      --limit <LIMIT>  Maximum events to return
-      --oldest-first   Ask the backend for chronological order
-      --types <TYPES>  Comma-separated signal kinds (or message) to include
-      --from <FROM>    Include only events from this handle
-      --all            Include session_status and inbox_read noise
-  -h, --help           Print help
+      --follow                   Follow pushed events until the mission ends or all its sessions exit
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --since <SINCE>            Start after this byte offset
+      --limit <LIMIT>            Maximum events to return
+      --oldest-first             Ask the backend for chronological order
+      --types <TYPES>            Comma-separated signal kinds (or message) to include
+      --from <FROM>              Include only events from this handle
+      --all                      Include session_status and inbox_read noise
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner mission answer
@@ -988,9 +1132,12 @@ Arguments:
   <CHOICE>
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner chat
@@ -1004,9 +1151,12 @@ Commands:
   start  Start a role-backed or runtime-only direct chat
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner chat start
@@ -1020,15 +1170,18 @@ Arguments:
   [ROLE]
 
 Options:
-      --json               Print the tool result as exact JSON
-      --runtime <RUNTIME>  Start a role-free chat with this runtime
-      --model <MODEL>      Model override
-  -q                       Print only result IDs
-      --effort <EFFORT>    Reasoning effort override
-      --speed <SPEED>      Codex Speed override: inherit, standard, or fast [possible values: inherit, standard, fast]
-      --project <PROJECT>  Project ID or exact name whose directory the chat uses
-      --cwd <CWD>          Chat directory; defaults to the current directory
-  -h, --help               Print help
+      --json                     Print the tool result as exact JSON
+      --runtime <RUNTIME>        Start a role-free chat with this runtime
+      --model <MODEL>            Model override
+  -q                             Print only result IDs
+      --effort <EFFORT>          Reasoning effort override
+      --speed <SPEED>            Codex Speed override: inherit, standard, or fast [possible values: inherit, standard, fast]
+      --project <PROJECT>        Project ID or exact name whose directory the chat uses
+      --cwd <CWD>                Chat directory; defaults to the current directory
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner session
@@ -1047,9 +1200,12 @@ Commands:
   restart  Restart a mission session with a fresh conversation
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner session list
@@ -1060,9 +1216,12 @@ List recent direct-chat sessions
 Usage: runner session list [OPTIONS]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner session show
@@ -1076,9 +1235,12 @@ Arguments:
   <SESSION>
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner session stop
@@ -1092,9 +1254,12 @@ Arguments:
   <SESSION>
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner session archive
@@ -1108,9 +1273,12 @@ Arguments:
   <SESSION>
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner session resume
@@ -1124,9 +1292,12 @@ Arguments:
   <SESSION>
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner session restart
@@ -1140,9 +1311,12 @@ Arguments:
   <SESSION>
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner msg
@@ -1157,9 +1331,12 @@ Commands:
   read  Read new inbox messages; --all shows crew history since joining
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner msg post
@@ -1173,12 +1350,15 @@ Arguments:
   <TEXT>
 
 Options:
-      --json               Print the tool result as exact JSON
-      --to <TO>            Address a roster handle; repeat for several recipients
-      --mission <MISSION>  Mission ID or unique prefix; required outside a mission
-  -q                       Print only result IDs
-      --as <FROM>          Attribute the message to this roster handle
-  -h, --help               Print help
+      --json                     Print the tool result as exact JSON
+      --to <TO>                  Address a roster handle; repeat for several recipients
+      --mission <MISSION>        Mission ID or unique prefix; required outside a mission
+  -q                             Print only result IDs
+      --as <FROM>                Attribute the message to this roster handle
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner msg read
@@ -1189,13 +1369,16 @@ Read new inbox messages; --all shows crew history since joining
 Usage: runner msg read [OPTIONS]
 
 Options:
-      --all                Show all crew messages since joining
-      --json               Print the tool result as exact JSON
-  -q                       Print only result IDs
-      --since <SINCE>      Return messages after this event ID without marking them read
-      --from <FROM>        Filter by sender handle
-      --mission <MISSION>  Mission reference; only the caller's mission is supported
-  -h, --help               Print help
+      --all                      Show all crew messages since joining
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --since <SINCE>            Return messages after this event ID without marking them read
+      --from <FROM>              Filter by sender handle
+      --mission <MISSION>        Mission reference; only the caller's mission is supported
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner signal
@@ -1209,12 +1392,15 @@ Arguments:
   <TYPE>  Signal type from the Runner coordination protocol
 
 Options:
-      --json               Print the tool result as exact JSON
-      --payload <PAYLOAD>  JSON object carried by the signal
-      --mission <MISSION>  Mission ID or unique prefix; required outside a mission
-  -q                       Print only result IDs
-      --as <FROM>          Attribute the signal to this roster handle
-  -h, --help               Print help
+      --json                     Print the tool result as exact JSON
+      --payload <PAYLOAD>        JSON object carried by the signal
+      --mission <MISSION>        Mission ID or unique prefix; required outside a mission
+  -q                             Print only result IDs
+      --as <FROM>                Attribute the signal to this roster handle
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner ask
@@ -1228,14 +1414,17 @@ Arguments:
   [QUESTION]  Question for the mission lead
 
 Options:
-      --context <CONTEXT>  Legacy context flag; direct lead questions use msg post --to
-      --json               Print the tool result as exact JSON
-      --human <HUMAN>      Ask the person at the app
-  -q                       Print only result IDs
-      --choices <CHOICES>  Comma-separated choices for --human
-      --mission <MISSION>  Mission ID or unique prefix; required outside a mission
-      --as <FROM>          Attribute the question to this roster handle
-  -h, --help               Print help
+      --context <CONTEXT>        Legacy context flag; direct lead questions use msg post --to
+      --json                     Print the tool result as exact JSON
+      --human <HUMAN>            Ask the person at the app
+  -q                             Print only result IDs
+      --choices <CHOICES>        Comma-separated choices for --human
+      --mission <MISSION>        Mission ID or unique prefix; required outside a mission
+      --as <FROM>                Attribute the question to this roster handle
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner call
@@ -1250,9 +1439,12 @@ Arguments:
   [ARGUMENTS]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```
 
 ## runner help
@@ -1266,7 +1458,10 @@ Arguments:
   [TOPIC]
 
 Options:
-      --json  Print the tool result as exact JSON
-  -q          Print only result IDs
-  -h, --help  Print help
+      --json                     Print the tool result as exact JSON
+  -q                             Print only result IDs
+      --wsl-distro <WSL_DISTRO>  Run new roles, chats, missions or projects in this WSL2 distribution
+      --wsl-user <WSL_USER>      Linux user in the selected distribution
+      --native                   Use the native host for new work, overriding a role or WSL terminal default
+  -h, --help                     Print help
 ```

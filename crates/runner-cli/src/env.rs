@@ -24,7 +24,7 @@ pub enum BusContext {
     Partial { missing: Vec<&'static str> },
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct MissionEnv {
     pub crew_id: Option<String>,
     pub mission_id: String,

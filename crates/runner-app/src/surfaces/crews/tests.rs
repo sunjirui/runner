@@ -44,6 +44,7 @@ fn slot_with_role(
             added_at: now,
         },
         role: Role {
+            execution_target: Default::default(),
             id: "role".into(),
             handle: "coder".into(),
             display_name: "Coder".into(),
@@ -70,6 +71,7 @@ fn mission(
     minutes: Option<i64>,
 ) -> Mission {
     Mission {
+        execution_target: Default::default(),
         id: id.into(),
         crew_id: Some(crew_id.into()),
         project_id: None,
@@ -559,6 +561,7 @@ impl CrewPageHarness {
         runner_daemon::ops::role::role_create(
             &self.core,
             runner_daemon::ops::role::CreateRoleInput {
+                execution_target: Default::default(),
                 handle: handle.into(),
                 display_name: format!("Role {handle}"),
                 runtime,

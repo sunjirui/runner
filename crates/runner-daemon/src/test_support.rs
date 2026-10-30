@@ -87,6 +87,7 @@ pub(crate) fn insert_test_role(
     crate::repo::role::insert(
         conn,
         &crate::repo::role::RoleRow {
+            execution_target: Default::default(),
             id: id.into(),
             handle: handle.into(),
             display_name: handle.into(),

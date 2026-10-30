@@ -142,6 +142,7 @@ impl Fixture {
         conn.execute("INSERT INTO sessions (id,role_id,project_id,cwd,status,started_at,stopped_at,title,agent_runtime,agent_command) VALUES (?1,'role-coder','project-fixture',?2,'stopped',?3,?3,'Fixture chat','codex','missing-fixture-agent')", [SESSION,self.directory.join("not-a-directory").to_str().unwrap(),STAMP]).unwrap();
         conn.execute("INSERT INTO sessions (id,mission_id,role_id,slot_id,cwd,status,started_at,stopped_at,agent_runtime,agent_command) VALUES ('session-mission',?1,'role-coder','slot-coder',?2,'stopped',?3,?3,'codex','missing-fixture-agent')", [MISSION,self.directory.as_path().to_str().unwrap(),STAMP]).unwrap();
         let definition = runner_daemon::model::LaunchDefinition {
+            execution_target: Default::default(),
             command: "missing-fixture-agent".into(),
             args: vec![],
             env: Default::default(),

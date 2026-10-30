@@ -23,6 +23,8 @@ pub mod terminal;
 pub mod usage;
 pub mod window;
 pub mod wire;
+pub use crate::execution_target::{WslDistribution, WslIntegration, WslStatus};
+pub use crate::ExecutionTarget;
 pub use api::{Request, Response};
 pub use client::*;
 pub use crew::*;

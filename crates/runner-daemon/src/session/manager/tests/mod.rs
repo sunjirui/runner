@@ -447,6 +447,7 @@ impl SessionEvents for Capture {
 
 fn role(command: &str, args: &[&str]) -> Role {
     Role {
+        execution_target: Default::default(),
         id: ulid::Ulid::new().to_string(),
         handle: "tester".into(),
         display_name: "Tester".into(),
@@ -490,6 +491,7 @@ fn slot_for(role: &Role) -> crate::model::Slot {
 
 fn mission() -> Mission {
     Mission {
+        execution_target: Default::default(),
         id: ulid::Ulid::new().to_string(),
         crew_id: Some("crew-ignored-in-tests".into()),
         project_id: None,
@@ -688,6 +690,7 @@ fn single_slot_mission(pool: &DbPool) -> (Mission, Role, crate::model::Slot) {
             .unwrap()
     };
     let mission = Mission {
+        execution_target: Default::default(),
         id: fresh_mission_id,
         ..mission_base
     };

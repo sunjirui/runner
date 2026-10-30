@@ -372,6 +372,7 @@ fn create_test_role_with_args(
     runner_daemon::ops::role::role_create(
         core,
         runner_daemon::ops::role::CreateRoleInput {
+            execution_target: Default::default(),
             handle: handle.into(),
             display_name: format!("Role {handle}"),
             runtime: Runtime::ClaudeCode,
@@ -391,6 +392,7 @@ fn create_test_role_with_args(
 
 fn chat_launch_definition(role: &Role) -> runner_daemon::model::LaunchDefinition {
     runner_daemon::model::LaunchDefinition {
+        execution_target: Default::default(),
         command: role.command.clone(),
         args: role.args.clone(),
         env: role
@@ -872,6 +874,7 @@ fn a_legacy_shell_role_saves_only_after_an_agent_is_picked() {
     runner_daemon::repo::role::insert(
         &page.core.db.get().unwrap(),
         &runner_daemon::repo::role::RoleRow {
+            execution_target: Default::default(),
             id: "legacy-shell".into(),
             handle: "legacy-shell".into(),
             display_name: "Legacy shell".into(),

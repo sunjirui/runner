@@ -8,6 +8,7 @@ fn rollout_capture_resolves_spawn_home_then_runner_home_then_default() {
     let runner_home = root.path().join("runner-codex");
     let role_home = root.path().join("role-codex");
     let mut spec = SpawnSpec {
+        execution_target: Default::default(),
         cwd: Some(cwd.clone()),
         ..Default::default()
     };

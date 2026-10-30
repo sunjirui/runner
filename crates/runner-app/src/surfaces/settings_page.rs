@@ -3988,6 +3988,7 @@ mod localization_tests {
                 store
                     .sessions
                     .push(runner_core::protocol::session::DirectSessionEntry {
+                        execution_target: Default::default(),
                         session_id: "owned-shell".into(),
                         project_id: None,
                         role_id: None,

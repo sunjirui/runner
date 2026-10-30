@@ -40,27 +40,7 @@ fn insert_crew(conn: &Connection, id: &str) {
 }
 
 fn insert_role(conn: &Connection, id: &str, handle: &str) -> rusqlite::Result<usize> {
-    let timestamp = "2026-04-22T00:00:00Z".parse().unwrap();
-    crate::repo::role::insert(
-        conn,
-        &crate::repo::role::RoleRow {
-            id: id.into(),
-            handle: handle.into(),
-            display_name: format!("{handle} display"),
-            runtime: "shell".into(),
-            command: "sh".into(),
-            args_json: Some(Vec::new()),
-            working_dir: None,
-            system_prompt: None,
-            env_json: Some(Default::default()),
-            model: None,
-            effort: None,
-            codex_speed: None,
-            created_at: timestamp,
-            updated_at: timestamp,
-        },
-    )
-    .map(|()| 1)
+    conn.execute("INSERT INTO roles (id, handle, display_name, runtime, command, args_json, env_json, created_at, updated_at) VALUES (?1, ?2, ?3, 'shell', 'sh', '[]', '{}', ?4, ?4)", params![id, handle, format!("{handle} display"), "2026-04-22T00:00:00+00:00"])
 }
 
 fn insert_slot(
@@ -507,6 +487,7 @@ fn json_blob_columns_roundtrip() {
     crate::repo::role::insert(
         &conn,
         &crate::repo::role::RoleRow {
+            execution_target: Default::default(),
             id: "r1".into(),
             handle: "test-impl".into(),
             display_name: "Impl".into(),
@@ -1423,10 +1404,12 @@ fn migration_0024_adds_runtime_options_columns() {
     .unwrap();
     run_migrations_up_to(&mut conn, 24).unwrap();
     assert_eq!(
-        crate::repo::role::get(&conn, "speed-role")
-            .unwrap()
-            .unwrap()
-            .codex_speed,
+        conn.query_row(
+            "SELECT runtime_options_json FROM roles WHERE id = 'speed-role'",
+            [],
+            |row| row.get::<_, Option<String>>(0)
+        )
+        .unwrap(),
         None
     );
     for (table, column) in [
@@ -1613,7 +1596,8 @@ fn migration_0026_converts_all_launches_before_0027_drops_columns() {
     let mut conn = Connection::open_in_memory().unwrap();
     conn.execute_batch("PRAGMA foreign_keys = ON").unwrap();
     run_migrations_up_to(&mut conn, 25).unwrap();
-    crate::test_support::insert_test_role(&conn, "role", "coder", "codex", "codex-wrapper");
+    insert_role(&conn, "role", "coder").unwrap();
+    conn.execute("UPDATE roles SET runtime = 'codex', command = 'codex-wrapper', display_name = 'coder' WHERE id = 'role'", []).unwrap();
     conn.execute(
         "UPDATE roles SET args_json = '[\"--search\",\"--sandbox\",\"workspace-write\"]',
             env_json = '{\"MARKER\":\"before\"}', model = 'role-model', effort = 'high',
@@ -1866,7 +1850,7 @@ fn migration_0028_preserves_every_row_column_and_mission_link() {
          INSERT INTO session_attention VALUES ('direct', NULL, NULL);",
     ).unwrap();
     let before = snapshot(&conn);
-    run_migrations(&mut conn).unwrap();
+    run_migrations_up_to(&mut conn, 28).unwrap();
     assert_eq!(snapshot(&conn), before);
     assert_eq!(
         conn.query_row("SELECT COUNT(*) FROM pragma_foreign_key_check", [], |row| {
@@ -1886,4 +1870,35 @@ fn migration_0028_preserves_every_row_column_and_mission_link() {
         assert!(conn.execute(sql, []).is_err(), "{sql}");
     }
     conn.execute("INSERT INTO missions (id, title, status, started_at) VALUES ('empty', 'Empty', 'running', '2026-10-15T00:00:00Z')", []).unwrap();
+}
+
+#[test]
+fn migration_0029_defaults_existing_entities_to_native() {
+    let mut conn = Connection::open_in_memory().unwrap();
+    super::init_connection(&mut conn).unwrap();
+    run_migrations_up_to(&mut conn, 28).unwrap();
+    insert_role(&conn, "legacy-role", "worker").unwrap();
+    conn.execute("INSERT INTO missions (id, title, status, started_at) VALUES ('legacy-mission', 'Mission', 'running', '2026-10-15T00:00:00Z')", []).unwrap();
+    conn.execute("INSERT INTO projects (id, name, cwd, position, created_at) VALUES ('legacy-project', 'Project', '/home/User/Repo', 0, '2026-10-15T00:00:00Z')", []).unwrap();
+    run_migrations(&mut conn).unwrap();
+    for table in ["roles", "missions", "projects"] {
+        let value: String = conn
+            .query_row(
+                &format!("SELECT execution_target_json FROM {table}"),
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            serde_json::from_str::<runner_core::ExecutionTarget>(&value).unwrap(),
+            runner_core::ExecutionTarget::Native
+        );
+    }
+    assert_eq!(
+        crate::repo::project::get(&conn, "legacy-project")
+            .unwrap()
+            .unwrap()
+            .cwd,
+        "/home/User/Repo"
+    );
 }

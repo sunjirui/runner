@@ -15,6 +15,9 @@ use crate::surfaces::crews::{crew_picture, lead_badge, slot_setup, slot_setup_li
 use crate::*;
 
 pub(crate) struct StartMissionModalState {
+    pub(super) execution_target: Option<runner_core::ExecutionTarget>,
+    pub(super) execution_select: Entity<StyledSelect>,
+    pub(super) execution_integrations: Vec<runner_core::execution_target::WslIntegration>,
     initial_crew_id: Option<String>,
     project: Option<ProjectRow>,
     crews: Vec<CrewListItem>,
@@ -23,7 +26,7 @@ pub(crate) struct StartMissionModalState {
     crew_select: Entity<StyledSelect>,
     title: Entity<TextField>,
     goal: Entity<TextField>,
-    cwd: Entity<TextField>,
+    pub(super) cwd: Entity<TextField>,
     loading: bool,
     submitting: bool,
     error: Option<String>,
@@ -123,7 +126,12 @@ impl NativeRoot {
             .into_iter()
             .map(|input| cx.observe(input, |_, _, cx| cx.notify()))
             .collect();
+        let execution_select =
+            self.new_work_execution_select(super::execution::WorkKind::Mission, cx);
         self.start_mission_modal = Some(StartMissionModalState {
+            execution_target: None,
+            execution_select,
+            execution_integrations: Vec::new(),
             initial_crew_id,
             project,
             crews: Vec::new(),
@@ -142,6 +150,7 @@ impl NativeRoot {
             submit_focus: cx.focus_handle(),
             _subscriptions: subscriptions,
         });
+        self.load_work_execution_targets(cx);
         crew_focus.focus(window, cx);
         cx.notify();
 
@@ -319,6 +328,7 @@ impl NativeRoot {
             return;
         }
         let input = runner_core::protocol::mission::MissionStart {
+            execution_target: modal.execution_target.clone(),
             crew_id: nonempty(&modal.crew_id),
             scope: ProjectScope::or_root(modal.project.as_ref().map(|project| project.id.clone())),
             title: modal.title.read(cx).text().trim().to_owned(),
@@ -450,6 +460,7 @@ impl NativeRoot {
                         .unwrap_or_else(|| if modal.crew_id.is_empty() { crate::i18n::text("ui.shared_with_every_role_that_joins_give_each_one_its_own_task_when_you_add_it").into() } else { crate::i18n::text("ui.delivered_to_the_crew_lead_on_mission_start").into() }),
                     ),
             )
+            .when(cfg!(windows), |body| body.child(Field::new("start-mission-execution-field", crate::i18n::text("ui.execution_target"), modal.execution_select.clone()).emphasized(true)))
             .child(
                 Field::new(
                     "start-mission-cwd-field",
@@ -515,7 +526,7 @@ impl NativeRoot {
         .focus_order(if modal.submitting {
             Vec::new()
         } else {
-            vec![
+            let mut order = vec![
                 modal.close_focus.clone(),
                 modal.crew_select.read(cx).focus_handle(),
                 modal.title.read(cx).focus_handle(),
@@ -524,7 +535,11 @@ impl NativeRoot {
                 modal.browse_focus.clone(),
                 modal.cancel_focus.clone(),
                 modal.submit_focus.clone(),
-            ]
+            ];
+            if cfg!(windows) {
+                order.insert(4, modal.execution_select.read(cx).focus_handle());
+            }
+            order
         })
         .footer(footer);
         div()
@@ -542,6 +557,9 @@ fn set_start_mission_fields_disabled(
     disabled: bool,
     cx: &mut Context<NativeRoot>,
 ) {
+    modal.execution_select.update(cx, |select, select_cx| {
+        select.set_disabled(disabled, select_cx)
+    });
     modal.crew_select.update(cx, |select, select_cx| {
         select.set_disabled(disabled, select_cx)
     });

@@ -17,7 +17,7 @@ $installDir = Join-Path $testRoot 'installed'
 $registryKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\${appId}_is1"
 $shortcutPath = Join-Path ([Environment]::GetFolderPath('Programs')) "$appName.lnk"
 $binaries = @('Runner.exe', 'runner-agent-cli.exe')
-$payload = $binaries + @('conpty.dll', 'OpenConsole.exe')
+$payload = $binaries + @('runner-agent-cli-linux', 'conpty.dll', 'OpenConsole.exe')
 $csc = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
 New-Item -ItemType Directory -Path $testRoot | Out-Null
 Write-Host "Installer smoke artifacts: $testRoot"
@@ -95,6 +95,7 @@ class Fixture {
         foreach ($binary in 'conpty.dll', 'OpenConsole.exe') {
             Copy-Item -LiteralPath "$stage/Runner.exe" -Destination (Join-Path $stage $binary)
         }
+        [IO.File]::WriteAllText((Join-Path $stage 'runner-agent-cli-linux'), "Linux CLI fixture $revision")
     }
     $updatesUrl = if ($revision -eq 2) {
         'https://github.com/yicheng47/runner/releases/latest'

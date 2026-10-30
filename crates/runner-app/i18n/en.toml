@@ -1073,3 +1073,10 @@
 "word.removed" = "removed"
 "word.system" = "system"
 "word.you" = "you"
+
+"ui.execution_target" = "Execution environment"
+"ui.wsl_user_default" = "Linux user (leave empty for the distribution default)"
+"ui.wsl_enable_refresh" = "Enable / refresh"
+"ui.wsl_integration" = "WSL2 integration"
+"ui.wsl_integration_hint" = "Enable a distribution, then choose its environment on a role or when starting work. Add ~/.local/bin to your Linux PATH for runner (runner-dev in development builds)."
+"ui.execution_inherit" = "Use role or project defaults"

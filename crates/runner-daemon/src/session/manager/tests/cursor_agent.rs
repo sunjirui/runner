@@ -166,6 +166,7 @@ fn cursor_closed_conversation_clears_key_without_stopping_output_forwarder() {
     let mgr = mgr_with_fake(None, fake.clone());
     let (rt_session, output) = fake
         .spawn(SpawnSpec {
+            execution_target: Default::default(),
             session_id: row.id.clone(),
             ..Default::default()
         })

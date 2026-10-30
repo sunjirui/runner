@@ -33,6 +33,15 @@ pub struct Cli {
     quiet: bool,
     #[command(subcommand)]
     command: Command,
+    /// Run new roles, chats, missions or projects in this WSL2 distribution.
+    #[arg(long, global = true, requires = "wsl_user", conflicts_with = "native")]
+    wsl_distro: Option<String>,
+    /// Linux user in the selected distribution.
+    #[arg(long, global = true, requires = "wsl_distro")]
+    wsl_user: Option<String>,
+    /// Use the native host for new work, overriding a role or WSL terminal default.
+    #[arg(long, global = true, conflicts_with = "wsl_distro")]
+    native: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -538,10 +547,54 @@ impl From<ClientError> for CliError {
 }
 
 trait Caller {
+    fn execution_target(&self) -> Option<&runner_core::ExecutionTarget> {
+        None
+    }
     fn subscribe(&self) -> Box<dyn EventSubscription> {
         Box::new(ClosedSubscription)
     }
     async fn call(&self, name: &str, arguments: Value) -> Result<ToolResponse, CliError>;
+}
+
+fn integrated_target() -> Result<Option<runner_core::ExecutionTarget>, CliError> {
+    std::env::var(runner_core::wsl_bridge::TARGET_ENV)
+        .ok()
+        .map(|s| {
+            let target: runner_core::ExecutionTarget =
+                serde_json::from_str(&s).map_err(|e| CliError::usage(e.to_string()))?;
+            target.validate().map_err(CliError::usage)?;
+            Ok(target)
+        })
+        .transpose()
+}
+
+struct TargetCaller<'a, T> {
+    inner: &'a T,
+    target: Option<runner_core::ExecutionTarget>,
+    explicit: bool,
+}
+impl<T: Caller> Caller for TargetCaller<'_, T> {
+    fn execution_target(&self) -> Option<&runner_core::ExecutionTarget> {
+        self.target.as_ref()
+    }
+    fn subscribe(&self) -> Box<dyn EventSubscription> {
+        self.inner.subscribe()
+    }
+    async fn call(&self, name: &str, mut arguments: Value) -> Result<ToolResponse, CliError> {
+        if let Some(target) = &self.target {
+            if matches!(
+                name,
+                "role_create" | "session_start_direct" | "mission_start" | "project_create"
+            ) {
+                arguments["execution_target"] =
+                    serde_json::to_value(target).map_err(|e| CliError::usage(e.to_string()))?;
+            } else if name == "role_update" && self.explicit {
+                arguments["input"]["execution_target"] =
+                    serde_json::to_value(target).map_err(|e| CliError::usage(e.to_string()))?;
+            }
+        }
+        self.inner.call(name, arguments).await
+    }
 }
 
 struct ClosedSubscription;
@@ -567,12 +620,30 @@ impl Caller for SocketClient {
 }
 
 pub fn run(cli: Cli) -> i32 {
+    if runner_core::wsl_bridge::integrated() {
+        if let Command::Daemon { command } = &cli.command {
+            return crate::wsl::forward_daemon(
+                match command {
+                    DaemonCommand::Status => "status",
+                    DaemonCommand::Stop => "stop",
+                },
+                cli.json,
+                cli.quiet,
+            );
+        }
+    }
     if let Command::Hook { command } = &cli.command {
         return runner_cli::hook::run(command);
     }
     if let Command::Help { topic } = &cli.command {
         help::print(topic.as_deref());
         return 0;
+    }
+    if cfg!(feature = "wsl-client") && !runner_core::wsl_bridge::integrated() {
+        eprintln!(
+            "runner: use the managed runner wrapper installed by Windows Runner's WSL integration"
+        );
+        return 1;
     }
     let context = env::resolve();
     if let BusContext::Partial { missing } = &context {
@@ -703,7 +774,17 @@ fn run_local(cli: &Cli, context: &BusContext) -> Option<i32> {
                 eprintln!("runner msg post: --as is only valid outside the caller's mission");
                 Some(2)
             } else {
-                Some(msg::post(mission, text, to))
+                Some(if runner_core::wsl_bridge::integrated() {
+                    crate::wsl::forward_local(
+                        mission,
+                        crate::wsl::LocalOperation::Post {
+                            text: text.clone(),
+                            to: to.clone(),
+                        },
+                    )
+                } else {
+                    msg::post(mission, text, to)
+                })
             }
         }
         Command::Msg {
@@ -715,7 +796,18 @@ fn run_local(cli: &Cli, context: &BusContext) -> Option<i32> {
                     mission: target,
                 },
         } if same_mission(target.as_deref(), mission) => {
-            Some(msg::read(mission, *all, since.as_deref(), from.as_deref()))
+            Some(if runner_core::wsl_bridge::integrated() {
+                crate::wsl::forward_local(
+                    mission,
+                    crate::wsl::LocalOperation::Read {
+                        all: *all,
+                        since: since.clone(),
+                        from: from.clone(),
+                    },
+                )
+            } else {
+                msg::read(mission, *all, since.as_deref(), from.as_deref())
+            })
         }
         Command::Signal {
             r#type,
@@ -727,7 +819,23 @@ fn run_local(cli: &Cli, context: &BusContext) -> Option<i32> {
                 eprintln!("runner signal: --as is only valid outside the caller's mission");
                 Some(2)
             } else {
-                Some(signal::run(mission, r#type, payload.as_deref()))
+                Some(if runner_core::wsl_bridge::integrated() {
+                    match signal::parse_payload(payload.as_deref()) {
+                        Ok(payload) => crate::wsl::forward_local(
+                            mission,
+                            crate::wsl::LocalOperation::Signal {
+                                kind: r#type.clone(),
+                                payload,
+                            },
+                        ),
+                        Err(error) => {
+                            eprintln!("{error}");
+                            2
+                        }
+                    }
+                } else {
+                    signal::run(mission, r#type, payload.as_deref())
+                })
             }
         }
         Command::Ask(args) if same_mission(args.mission.as_deref(), mission) => {
@@ -736,7 +844,17 @@ fn run_local(cli: &Cli, context: &BusContext) -> Option<i32> {
                 return Some(2);
             }
             match ask_signal(args) {
-                Ok((kind, payload)) => Some(signal::append(mission, kind, payload)),
+                Ok((kind, payload)) => Some(if runner_core::wsl_bridge::integrated() {
+                    crate::wsl::forward_local(
+                        mission,
+                        crate::wsl::LocalOperation::Signal {
+                            kind: kind.into(),
+                            payload,
+                        },
+                    )
+                } else {
+                    signal::append(mission, kind, payload)
+                }),
                 Err(error) => {
                     eprintln!("{}", error.message);
                     Some(error.code)
@@ -1019,6 +1137,24 @@ async fn run_connected(
     cli: &Cli,
     context: &BusContext,
 ) -> Result<ToolResponse, CliError> {
+    let target = if cli.native {
+        Some(runner_core::ExecutionTarget::Native)
+    } else if let (Some(distro), Some(user)) = (&cli.wsl_distro, &cli.wsl_user) {
+        let target = runner_core::ExecutionTarget::Wsl {
+            distro: distro.clone(),
+            user: user.clone(),
+        };
+        target.validate().map_err(CliError::usage)?;
+        Some(target)
+    } else {
+        integrated_target()?
+    };
+    let decorated = TargetCaller {
+        inner: client,
+        target,
+        explicit: cli.native || cli.wsl_distro.is_some(),
+    };
+    let client = &decorated;
     match &cli.command {
         Command::Daemon { .. } | Command::Hook { .. } => unreachable!(),
         Command::Status => unreachable!(),
@@ -1262,7 +1398,7 @@ async fn run_project(
             call(client, "project_get", json!({"id": project.id})).await
         }
         ProjectCommand::Create { name, path } => {
-            let path = absolute_path(path.as_deref().unwrap_or(Path::new(".")))?;
+            let path = launch_cwd(client, path.as_deref())?.unwrap_or_default();
             call(client, "project_create", json!({"name": name, "cwd": path})).await
         }
         ProjectCommand::Rename { project, name } => {
@@ -1520,7 +1656,7 @@ async fn run_mission(
                 None => None,
             };
             let cwd = if project_id.is_none() {
-                Some(absolute_path(cwd.as_deref().unwrap_or(Path::new(".")))?)
+                launch_cwd(client, cwd.as_deref())?
             } else {
                 None
             };
@@ -2028,7 +2164,7 @@ async fn run_chat(client: &impl Caller, command: &ChatCommand) -> Result<ToolRes
         None => None,
     };
     let cwd = if project_id.is_none() {
-        Some(absolute_path(cwd.as_deref().unwrap_or(Path::new(".")))?)
+        launch_cwd(client, cwd.as_deref())?
     } else {
         None
     };
@@ -2510,6 +2646,25 @@ fn read_file(path: &Path, label: &str) -> Result<String, CliError> {
     }
 }
 
+fn launch_cwd(client: &impl Caller, path: Option<&Path>) -> Result<Option<String>, CliError> {
+    if client
+        .execution_target()
+        .is_some_and(|target| !target.is_native())
+    {
+        if let Some(path) = path {
+            let value = path.to_string_lossy();
+            if value.starts_with('/') {
+                runner_core::execution_target::validate_linux_path(&value)
+                    .map_err(CliError::usage)?;
+                return Ok(Some(value.into_owned()));
+            }
+        } else if !runner_core::wsl_bridge::integrated() {
+            return Ok(None);
+        }
+    }
+    absolute_path(path.unwrap_or(Path::new("."))).map(Some)
+}
+
 fn absolute_path(path: &Path) -> Result<String, CliError> {
     let path = if path.is_absolute() {
         path.to_owned()
@@ -2606,6 +2761,87 @@ mod tests {
     use super::*;
     use std::collections::VecDeque;
     use std::sync::Mutex;
+
+    #[tokio::test]
+    async fn wsl_target_preserves_linux_paths_and_only_retargets_explicit_role_updates() {
+        let recorded = RecordingClient::default();
+        let target = runner_core::ExecutionTarget::Wsl {
+            distro: "Ubuntu".into(),
+            user: "tester".into(),
+        };
+        let caller = TargetCaller {
+            inner: &recorded,
+            target: Some(target.clone()),
+            explicit: false,
+        };
+        assert_eq!(
+            launch_cwd(&caller, Some(Path::new("/home/tester/项目 A")))
+                .unwrap()
+                .as_deref(),
+            Some("/home/tester/项目 A")
+        );
+        assert!(launch_cwd(&caller, Some(Path::new("/home/../root"))).is_err());
+        caller
+            .call(
+                "session_start_direct",
+                json!({"runtime":"codex", "cwd":"/home/tester/项目 A"}),
+            )
+            .await
+            .unwrap();
+        caller
+            .call(
+                "role_update",
+                json!({"id":"role", "input":{"display_name":"New name"}}),
+            )
+            .await
+            .unwrap();
+        let caller = TargetCaller {
+            explicit: true,
+            ..caller
+        };
+        caller
+            .call("role_update", json!({"id":"role", "input":{}}))
+            .await
+            .unwrap();
+        let calls = recorded.calls.lock().unwrap();
+        assert_eq!(
+            calls[0].1["execution_target"],
+            serde_json::to_value(&target).unwrap()
+        );
+        assert!(calls[1].1["input"].get("execution_target").is_none());
+        assert_eq!(
+            calls[2].1["input"]["execution_target"],
+            serde_json::to_value(&target).unwrap()
+        );
+    }
+
+    #[test]
+    fn wsl_flags_require_a_complete_identity_and_conflict_with_native() {
+        assert!(
+            Cli::try_parse_from(["runner", "--wsl-distro", "Ubuntu", "project", "list"]).is_err()
+        );
+        assert!(Cli::try_parse_from([
+            "runner",
+            "--native",
+            "--wsl-distro",
+            "Ubuntu",
+            "--wsl-user",
+            "tester",
+            "project",
+            "list"
+        ])
+        .is_err());
+        assert!(Cli::try_parse_from([
+            "runner",
+            "--wsl-distro",
+            "Ubuntu",
+            "--wsl-user",
+            "tester",
+            "project",
+            "list"
+        ])
+        .is_ok());
+    }
 
     #[derive(Default)]
     struct RecordingClient {

@@ -46,6 +46,7 @@ fn forward_queued_output(items: Vec<RuntimeOutput>) -> Vec<ForwardedEvent> {
     let mgr = mgr_with_fake(None, Arc::clone(&fake));
     let (rt_session, output) = fake
         .spawn(SpawnSpec {
+            execution_target: Default::default(),
             session_id: "burst-test".into(),
             ..Default::default()
         })
@@ -111,6 +112,7 @@ fn codex_session_starts_rekey_current_running_row_for_direct_and_mission() {
             let mgr = mgr_with_fake(None, Arc::clone(&fake));
             let (rt_session, output) = fake
                 .spawn(SpawnSpec {
+                    execution_target: Default::default(),
                     session_id: id.clone(),
                     ..Default::default()
                 })
@@ -199,6 +201,7 @@ fn codex_session_starts_cannot_rekey_older_or_stopped_rows() {
         let mgr = mgr_with_fake(None, Arc::clone(&fake));
         let (rt_session, output) = fake
             .spawn(SpawnSpec {
+                execution_target: Default::default(),
                 session_id: id.clone(),
                 ..Default::default()
             })
@@ -268,6 +271,7 @@ fn forwarder_delivers_a_cursor_burst_without_waiting_for_eof() {
     let mgr = mgr_with_fake(None, Arc::clone(&fake));
     let (rt_session, output) = fake
         .spawn(SpawnSpec {
+            execution_target: Default::default(),
             session_id: "cursor-burst-test".into(),
             ..Default::default()
         })

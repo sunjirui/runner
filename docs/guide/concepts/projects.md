@@ -14,6 +14,17 @@ runner mission start --crew "Pair coding crew" --project "My app" --goal "Review
 
 On Windows, use an absolute Windows path such as `C:\Users\you\src\my-app`. Quote paths containing spaces.
 
+For a WSL2 project, create it from the integrated Linux terminal:
+
+```sh
+runner project create "Linux app" --path /home/you/src/my-app
+```
+
+Or use the Windows CLI with `--wsl-distro Ubuntu --wsl-user you` before the command.
+A WSL project stores its distribution and user as well as its Linux directory.
+The same path in another distribution or user is a different project. Work launched
+in that project inherits its environment; an explicit conflicting target is rejected.
+
 ## Directory and grouping
 
 From a shell, a chat or mission started inside a registered project's directory is associated with that project automatically. `--project` explicitly selects a project and its directory; `--cwd` supplies a launch directory instead. These two flags cannot be combined. The CLI's directory defaults to the shell's current directory, so check where you are before starting a mission.

@@ -8,6 +8,8 @@ pub mod command_install;
 pub mod daemon_process;
 pub mod error;
 pub mod event_log;
+pub mod execution_target;
+pub use execution_target::ExecutionTarget;
 pub mod logging;
 pub mod mission_roster;
 pub mod model;
@@ -38,3 +40,4 @@ pub const fn runner_skill_name(debug: bool) -> &'static str {
 pub mod protocol;
 
 pub mod version;
+pub mod wsl_bridge;

@@ -1073,3 +1073,10 @@
 "word.removed" = "移除"
 "word.system" = "系统"
 "word.you" = "你"
+
+"ui.execution_target" = "运行环境"
+"ui.wsl_user_default" = "Linux 用户（留空使用发行版默认用户）"
+"ui.wsl_enable_refresh" = "启用 / 刷新"
+"ui.wsl_integration" = "WSL2 集成"
+"ui.wsl_integration_hint" = "启用发行版后，可在角色或启动任务时选择其运行环境。在 Linux PATH 中加入 ~/.local/bin 以使用 runner（开发版为 runner-dev）。"
+"ui.execution_inherit" = "使用角色或项目默认环境"

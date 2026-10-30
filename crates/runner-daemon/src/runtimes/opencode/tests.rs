@@ -347,6 +347,7 @@ fn active_snapshots_rekey_home_and_ignore_children_stale_reload_and_generation()
     let mut watcher = status::Watcher::new(
         receiver,
         &SpawnSpec {
+            execution_target: Default::default(),
             args: strings(&["--session", "ses_first"]),
             ..Default::default()
         },

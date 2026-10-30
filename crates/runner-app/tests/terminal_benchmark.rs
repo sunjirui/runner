@@ -55,6 +55,7 @@ fn spawn_cat(
     script: &str,
 ) -> Arc<TerminalMirror> {
     let role = Role {
+        execution_target: Default::default(),
         id: "runtime:shell".into(),
         handle: format!("bench-{}", core.sessions.live_session_ids().len()),
         display_name: "Terminal benchmark".into(),

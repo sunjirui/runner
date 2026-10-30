@@ -2655,6 +2655,7 @@ mod tests {
 
     fn direct_session(runtime: &str, forkable: bool) -> DirectSessionEntry {
         DirectSessionEntry {
+            execution_target: Default::default(),
             session_id: "chat-1".into(),
             project_id: None,
             role_id: None,

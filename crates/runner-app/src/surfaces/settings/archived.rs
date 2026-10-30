@@ -747,6 +747,7 @@ mod tests {
 
     fn mission(id: &str, title: &str, cwd: &str, archived_at: &str) -> Mission {
         Mission {
+            execution_target: Default::default(),
             id: id.into(),
             crew_id: Some("crew".into()),
             project_id: None,
@@ -763,6 +764,7 @@ mod tests {
 
     fn chat(id: &str, title: Option<&str>, cwd: &str, archived_at: &str) -> DirectSessionEntry {
         DirectSessionEntry {
+            execution_target: Default::default(),
             session_id: id.into(),
             project_id: None,
             role_id: None,

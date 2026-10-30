@@ -695,6 +695,7 @@ fn hidden_terminal_answers_each_query_once() {
         let role = crate::ops::role::create(
             &core.db.get().unwrap(),
             crate::ops::role::CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "probe".into(),
                 display_name: "Probe".into(),
                 runtime: crate::model::Runtime::Trae,
@@ -764,6 +765,7 @@ fn keys_follow_the_apps_kitty_keyboard_mode() {
     let role = crate::ops::role::create(
         &core.db.get().unwrap(),
         crate::ops::role::CreateRoleInput {
+            execution_target: Default::default(),
             handle: "probe".into(),
             display_name: "Probe".into(),
             runtime: crate::model::Runtime::Trae,
@@ -909,6 +911,7 @@ fn a_subscribed_tui_learns_of_a_scheme_flip() {
     let role = crate::ops::role::create(
         &core.db.get().unwrap(),
         crate::ops::role::CreateRoleInput {
+            execution_target: Default::default(),
             handle: "probe".into(),
             display_name: "Probe".into(),
             runtime: crate::model::Runtime::Trae,
@@ -1559,6 +1562,7 @@ fn da1_has_one_reply_with_zero_one_and_two_mirrors() {
         let role = crate::ops::role::create(
             &core.db.get().unwrap(),
             crate::ops::role::CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "one-reply".into(),
                 display_name: "One reply".into(),
                 runtime: crate::model::Runtime::Trae,

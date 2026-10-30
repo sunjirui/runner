@@ -93,6 +93,63 @@ pub(crate) fn resolve_cwd(
     Ok((project_id, cwd))
 }
 
+pub(crate) fn resolve_target_scope(
+    conn: &rusqlite::Connection,
+    scope: &ProjectScope,
+    cwd: Option<String>,
+    target: &runner_core::ExecutionTarget,
+) -> Result<(Option<String>, Option<String>)> {
+    if target.is_native() {
+        if let ProjectScope::Project(id) = scope {
+            if !get(conn, id)?.execution_target.is_native() {
+                return Err(Error::msg("project and agent execution targets differ"));
+            }
+        }
+        return resolve_scope(conn, scope, cwd);
+    }
+    match scope {
+        ProjectScope::Root => Ok((None, cwd)),
+        ProjectScope::Infer => {
+            let id = cwd
+                .as_deref()
+                .map(|p| repo::project::find_for_target(conn, p, target))
+                .transpose()?
+                .flatten()
+                .map(|p| p.id);
+            Ok((id, cwd))
+        }
+        ProjectScope::Project(id) => {
+            let project = get(conn, id)?;
+            if &project.execution_target != target {
+                return Err(Error::msg("project and agent execution targets differ"));
+            }
+            Ok((Some(id.clone()), cwd.or(Some(project.cwd))))
+        }
+    }
+}
+
+pub fn project_create_target(
+    state: &AppCore,
+    name: String,
+    cwd: String,
+    target: runner_core::ExecutionTarget,
+) -> Result<ProjectRow> {
+    crate::wsl::require_windows_target(&target)?;
+    if target.is_native() {
+        return project_create_checked(state, name, cwd);
+    }
+    let cwd = crate::wsl::resolve_cwd(&target, Some(&cwd), None)?
+        .ok_or_else(|| Error::msg("WSL directory is unavailable"))?;
+    let conn = state.db.get()?;
+    let row = repo::project::create_for_target(&conn, &clean_value(name, "name")?, &cwd, &target)?;
+    repo::node::ensure_project_node(&conn, &row.id)?;
+    emit_changed(state);
+    state
+        .events
+        .emit("chat/layout-changed", &serde_json::json!({}));
+    Ok(row)
+}
+
 pub fn project_list(state: &AppCore) -> Result<Vec<ProjectRow>> {
     let conn = state.db.get()?;
     list(&conn)

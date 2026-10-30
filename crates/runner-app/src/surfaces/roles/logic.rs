@@ -310,6 +310,7 @@ pub(super) fn role_edit_is_dirty(form: &RoleEditForm, cx: &Context<NativeRoot>) 
     let role = &form.role;
     let stored = |value: &Option<String>| value.as_deref().and_then(trimmed_option);
     form.display_name.read(cx).text().trim() != role.display_name.trim()
+        || form.execution_target != role.execution_target
         || form.runtime != role.runtime
         || role_edit_args(form, cx) != role_visible_args(role)
         || trimmed_option(form.model.read(cx).text()) != stored(&role.model)

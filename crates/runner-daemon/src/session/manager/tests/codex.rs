@@ -15,6 +15,7 @@ fn codex_speed_follows_role_args_for_direct_and_mission_spawns() {
                 role.runtime = "codex".into();
                 role.codex_speed = speed;
                 let mut spec = SpawnSpec {
+                    execution_target: Default::default(),
                     agent_runtime: None,
                     pending_turn: None,
                     session_id: "speed-spawn".into(),
@@ -28,15 +29,17 @@ fn codex_speed_follows_role_args_for_direct_and_mission_spawns() {
                     shell_path: None,
                     initial_size: None,
                 };
-                mgr_with_fake(None, fake_runtime()).apply_runtime_args(
-                    &mut spec,
-                    &role,
-                    &crate::runtimes::adapter(Runtime::Codex).resume_plan(key),
-                    root.path(),
-                    None,
-                    Some("first turn"),
-                    None,
-                );
+                mgr_with_fake(None, fake_runtime())
+                    .apply_runtime_args(
+                        &mut spec,
+                        &role,
+                        &crate::runtimes::adapter(Runtime::Codex).resume_plan(key),
+                        root.path(),
+                        None,
+                        Some("first turn"),
+                        None,
+                    )
+                    .unwrap();
                 let tiers = spec
                     .args
                     .windows(2)
@@ -75,6 +78,7 @@ fn codex_spawn_composes_hooks_without_changing_user_home_and_respects_overrides(
         let mut generations = Vec::new();
         for key in [None, Some("11111111-1111-4111-8111-111111111111")] {
             let mut spec = SpawnSpec {
+                execution_target: Default::default(),
                 agent_runtime: None,
                 pending_turn: None,
                 session_id: "codex-spawn".into(),
@@ -88,15 +92,17 @@ fn codex_spawn_composes_hooks_without_changing_user_home_and_respects_overrides(
                 shell_path: None,
                 initial_size: None,
             };
-            mgr_with_fake(None, fake_runtime()).apply_runtime_args(
-                &mut spec,
-                &role,
-                &crate::runtimes::adapter(Runtime::Codex).resume_plan(key),
-                root.path(),
-                None,
-                Some("first turn"),
-                None,
-            );
+            mgr_with_fake(None, fake_runtime())
+                .apply_runtime_args(
+                    &mut spec,
+                    &role,
+                    &crate::runtimes::adapter(Runtime::Codex).resume_plan(key),
+                    root.path(),
+                    None,
+                    Some("first turn"),
+                    None,
+                )
+                .unwrap();
             assert_eq!(spec.env["CODEX_HOME"], "user home");
             assert_eq!(spec.pending_turn, Some(key.is_none()));
             let injected = args.is_empty();
@@ -772,18 +778,21 @@ fn codex_windows_batch_pending_prompt_is_recorded_before_argv_suppression() {
     let mut role = role("codex.cmd", &[]);
     role.runtime = "codex".into();
     let mut spec = SpawnSpec {
+        execution_target: Default::default(),
         command: role.command.clone(),
         ..Default::default()
     };
-    mgr_with_fake(None, fake_runtime()).apply_runtime_args(
-        &mut spec,
-        &role,
-        &crate::runtimes::adapter(Runtime::Codex).resume_plan(None),
-        root.path(),
-        None,
-        Some("automatic prompt"),
-        None,
-    );
+    mgr_with_fake(None, fake_runtime())
+        .apply_runtime_args(
+            &mut spec,
+            &role,
+            &crate::runtimes::adapter(Runtime::Codex).resume_plan(None),
+            root.path(),
+            None,
+            Some("automatic prompt"),
+            None,
+        )
+        .unwrap();
     assert_eq!(spec.pending_turn, Some(true));
     assert!(!spec.args.iter().any(|arg| arg == "automatic prompt"));
 }

@@ -2,7 +2,7 @@ use super::helpers::*;
 use super::*;
 use runner_core::protocol::runtime_metadata::cursor_agent::{PERMISSIONS, SKILL_DIRS};
 
-mod conversation;
+pub(crate) mod conversation;
 mod models;
 
 pub struct CursorAgent;

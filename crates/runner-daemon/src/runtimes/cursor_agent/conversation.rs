@@ -41,12 +41,17 @@ fn chats_dir(cwd: Option<&str>, env: &HashMap<String, String>) -> Option<PathBuf
     let cwd = cwd
         .map(PathBuf::from)
         .or_else(|| std::env::current_dir().ok())?;
-    let cwd = if cwd.is_absolute() {
+    let linux_cwd = env.contains_key(runner_core::wsl_bridge::TARGET_ENV);
+    let cwd = if cwd.is_absolute() || linux_cwd {
         cwd
     } else {
         std::env::current_dir().ok()?.join(cwd)
     };
-    let cwd = cwd.canonicalize().unwrap_or(cwd);
+    let cwd = if linux_cwd {
+        cwd
+    } else {
+        cwd.canonicalize().unwrap_or(cwd)
+    };
     let bucket = format!("{:x}", Md5::digest(cwd.to_string_lossy().as_bytes()));
     let config = config_dir_with(env)?;
     let config = if config.is_absolute() {
@@ -71,7 +76,8 @@ pub(super) fn store_path(
 
 // Cursor closes the old store on /clear, /resume and /fork. Observe the
 // launched process's open store, rather than guessing from the newest chat.
-pub(super) struct Watcher {
+pub(crate) struct Watcher {
+    state_file: Option<PathBuf>,
     root: PathBuf,
     pid: Option<u32>,
     last_poll: Option<Instant>,
@@ -80,8 +86,12 @@ pub(super) struct Watcher {
 }
 
 impl Watcher {
-    pub(super) fn new(spec: &SpawnSpec) -> Option<Self> {
+    pub(crate) fn new(spec: &SpawnSpec) -> Option<Self> {
         Some(Self {
+            state_file: spec
+                .env
+                .get("RUNNER_WSL_LAUNCH_DIR")
+                .map(|dir| Path::new(dir).join("conversation.json")),
             root: chats_dir(
                 spec.cwd.as_deref().and_then(Path::to_str),
                 &spec
@@ -95,6 +105,12 @@ impl Watcher {
             key: None,
             empty_polls: 0,
         })
+    }
+
+    #[cfg(target_os = "linux")]
+    pub(crate) fn scan_processes(&mut self, pids: impl Iterator<Item = u32>) -> Option<String> {
+        let paths = pids.filter_map(open_files).flatten().collect::<Vec<_>>();
+        self.observe(&paths)
     }
 
     fn observe(&mut self, paths: &[PathBuf]) -> Option<String> {
@@ -159,6 +175,19 @@ impl HookWatcher for Watcher {
             .last_poll
             .is_some_and(|at| at.elapsed() < Duration::from_millis(500))
         {
+            return Ok(());
+        }
+        if let Some(path) = &self.state_file {
+            self.last_poll = Some(Instant::now());
+            if let Ok(bytes) = std::fs::read(path) {
+                if let Ok(key) = serde_json::from_slice::<String>(&bytes) {
+                    let next = (!key.is_empty()).then_some(key.clone());
+                    if next != self.key {
+                        self.key = next;
+                        session_start(key);
+                    }
+                }
+            }
             return Ok(());
         }
         let Some(pid) = self.pid else {
@@ -281,6 +310,7 @@ mod tests {
         let second = "1f5c822a-5704-4aab-a4c2-fae5757479c1";
         let store = |id: &str| root.join(id).join("store.db");
         let mut watcher = Watcher {
+            state_file: None,
             root: root.clone(),
             pid: None,
             last_poll: None,
@@ -376,6 +406,7 @@ mod tests {
         let key = "578dbdf3-2776-4aa0-ab95-ec4a2c3f58e4";
         let root = PathBuf::from("/owned/chats/workspace");
         let mut watcher = Watcher {
+            state_file: None,
             root,
             pid: Some(u32::MAX),
             last_poll: None,
@@ -438,6 +469,7 @@ mod tests {
         stdout.read_line(&mut ready).unwrap();
         assert_eq!(ready.trim(), "READY");
         let spec = SpawnSpec {
+            execution_target: Default::default(),
             cwd: Some(directory.path().to_path_buf()),
             env: env.into_iter().collect(),
             ..Default::default()

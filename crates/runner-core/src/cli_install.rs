@@ -45,6 +45,13 @@ pub fn install_from_source(app_data_dir: &Path, source: &Path) -> Result<()> {
     std::fs::create_dir_all(app_data_dir)?;
     let lock = crate::daemon_process::lock_file(app_data_dir)?;
     install_binary(app_data_dir, source, AGENT_DEST_BIN_NAME)?;
+    #[cfg(windows)]
+    {
+        let linux_cli = source.parent().unwrap().join("runner-agent-cli-linux");
+        if linux_cli.is_file() {
+            install_binary(app_data_dir, &linux_cli, "runner-agent-cli-linux")?;
+        }
+    }
     match lock.try_lock_exclusive() {
         Ok(()) => {
             install_binary(app_data_dir, source, DAEMON_DEST_BIN_NAME)?;

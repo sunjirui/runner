@@ -559,6 +559,12 @@ impl NativeRoot {
                     .flex()
                     .flex_col()
                     .gap(rems(14. / 16.))
+                    .when(cfg!(windows), |setup| {
+                        setup.child(edit_row(
+                            crate::i18n::text("ui.execution_target"),
+                            form.execution_select.clone(),
+                        ))
+                    })
                     .child(
                         edit_row(crate::i18n::text("ui.runtime"), form.runtime_select.clone())
                             .children(

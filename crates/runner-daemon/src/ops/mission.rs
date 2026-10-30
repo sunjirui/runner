@@ -176,7 +176,6 @@ pub fn start(
     if let Some(g) = input.goal_override.as_deref() {
         validate_mission_goal(g)?;
     }
-    let (project_id, cwd) = project::resolve_scope(conn, &input.scope, input.cwd)?;
 
     // Validate crew exists and is launchable.
     let tx = conn.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
@@ -204,6 +203,33 @@ pub fn start(
         Vec::new()
     };
 
+    let project_target = input
+        .scope
+        .project_id()
+        .map(|id| project::get(&tx, id).map(|project| project.execution_target))
+        .transpose()?;
+    let execution_target = match input.execution_target.or(project_target) {
+        Some(target) => target,
+        None => {
+            let target = slots
+                .first()
+                .map(|member| member.role.execution_target.clone())
+                .unwrap_or_default();
+            if slots
+                .iter()
+                .any(|member| member.role.execution_target != target)
+            {
+                return Err(Error::msg(
+                    "crew roles use different execution targets; choose one target for the mission",
+                ));
+            }
+            target
+        }
+    };
+    execution_target.validate().map_err(Error::msg)?;
+    let (project_id, cwd) =
+        project::resolve_target_scope(&tx, &input.scope, input.cwd, &execution_target)?;
+
     // Everything below is done under a DB transaction so that if any of the
     // filesystem or event-log writes fail, the mission row is rolled back
     // and the operator doesn't see a phantom `running` mission (review
@@ -224,6 +250,7 @@ pub fn start(
     repo::mission::insert(
         &tx,
         &repo::mission::MissionRow {
+            execution_target,
             id: id.clone(),
             crew_id: input.crew_id.clone(),
             project_id: project_id.clone(),
@@ -1455,6 +1482,7 @@ mod tests {
         let r = runner_cmd::create(
             conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: handle.into(),
                 display_name: handle.into(),
                 runtime: crate::model::Runtime::Trae,
@@ -1484,6 +1512,7 @@ mod tests {
             conn,
             app_data_dir,
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "Message mission".into(),
@@ -1554,6 +1583,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id),
                 title: "Try".into(),
@@ -1578,6 +1608,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id),
                 title: "Try".into(),
@@ -1606,6 +1637,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id),
                 title: "   ".into(),
@@ -1876,6 +1908,7 @@ mod tests {
                 &mut conn,
                 &state.app_data_dir,
                 StartMissionInput {
+                    execution_target: None,
                     crew_id: Some(crew_id),
                     project_id: None,
                     title: "Resume mission".into(),
@@ -1927,6 +1960,7 @@ mod tests {
                 &mut conn,
                 &state.app_data_dir,
                 StartMissionInput {
+                    execution_target: None,
                     crew_id: Some(crew_id),
                     project_id: None,
                     title: "Partial resume mission".into(),
@@ -2105,6 +2139,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: Some(project.id.clone()),
                 crew_id: Some(crew_id.clone()),
                 title: "first mission".into(),
@@ -2175,6 +2210,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id),
                 title: "inferred project".into(),
@@ -2215,6 +2251,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             MissionStart {
+                execution_target: None,
                 crew_id: Some(crew_id),
                 scope: ProjectScope::Root,
                 title: "recents mission".into(),
@@ -2248,6 +2285,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: Some(project.id),
                 crew_id: Some(crew_id),
                 title: "override cwd".into(),
@@ -2274,6 +2312,7 @@ mod tests {
                 &mut conn,
                 tmp.path(),
                 StartMissionInput {
+                    execution_target: None,
                     project_id: None,
                     crew_id: Some(crew_id.clone()),
                     title: format!("{mode:?}"),
@@ -2313,6 +2352,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: Some("missing".into()),
                 crew_id: Some(crew_id),
                 title: "unknown project".into(),
@@ -2346,6 +2386,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id),
                 title: "m".into(),
@@ -2371,6 +2412,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "m".into(),
@@ -2418,6 +2460,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "m".into(),
@@ -2460,6 +2503,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id),
                 title: "m".into(),
@@ -2492,6 +2536,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "m".into(),
@@ -2666,6 +2711,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id),
                 title: "m".into(),
@@ -2699,6 +2745,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "m".into(),
@@ -2774,6 +2821,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(a.clone()),
                 title: "first".into(),
@@ -2796,6 +2844,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(a.clone()),
                 title: "second".into(),
@@ -2810,6 +2859,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(b),
                 title: "other crew".into(),
@@ -2846,6 +2896,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "first".into(),
@@ -2860,6 +2911,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "second".into(),
@@ -2927,6 +2979,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "m".into(),
@@ -3001,6 +3054,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "m".into(),
@@ -3037,6 +3091,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "m".into(),
@@ -3117,6 +3172,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "m".into(),
@@ -3198,6 +3254,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "m".into(),
@@ -3283,6 +3340,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "m".into(),
@@ -3320,6 +3378,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "live".into(),
@@ -3369,6 +3428,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id),
                 title: "m".into(),
@@ -3402,6 +3462,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "m".into(),
@@ -3448,6 +3509,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "old".into(),
@@ -3508,6 +3570,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "running-1".into(),
@@ -3523,6 +3586,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "running-2".into(),
@@ -3538,6 +3602,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id.clone()),
                 title: "completed".into(),
@@ -3558,6 +3623,7 @@ mod tests {
             &mut conn,
             tmp.path(),
             StartMissionInput {
+                execution_target: None,
                 project_id: None,
                 crew_id: Some(crew_id),
                 title: "running-archived".into(),

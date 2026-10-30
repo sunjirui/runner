@@ -182,6 +182,7 @@ pub fn get_by_handle(conn: &Connection, handle: &str) -> Result<Role> {
 
 pub fn create(conn: &Connection, input: CreateRoleInput) -> Result<Role> {
     validate_handle(&input.handle)?;
+    input.execution_target.validate().map_err(Error::msg)?;
     if input.display_name.trim().is_empty() {
         return Err(Error::msg("display_name must not be empty"));
     }
@@ -208,6 +209,7 @@ pub fn create(conn: &Connection, input: CreateRoleInput) -> Result<Role> {
             handle: input.handle,
             display_name: input.display_name,
             runtime: input.runtime.to_string(),
+            execution_target: input.execution_target,
             command: input.command,
             args_json: Some(args),
             working_dir: input.working_dir,
@@ -235,6 +237,9 @@ pub fn create(conn: &Connection, input: CreateRoleInput) -> Result<Role> {
 
 pub fn update(conn: &Connection, id: &str, input: UpdateRoleInput) -> Result<Role> {
     let existing = get(conn, id)?;
+    if let Some(target) = &input.execution_target {
+        target.validate().map_err(Error::msg)?;
+    }
     if let Some(ref n) = input.display_name {
         if n.trim().is_empty() {
             return Err(Error::msg("display_name must not be empty"));
@@ -337,6 +342,7 @@ pub fn update(conn: &Connection, id: &str, input: UpdateRoleInput) -> Result<Rol
             handle: existing.handle,
             display_name,
             runtime,
+            execution_target: input.execution_target.unwrap_or(existing.execution_target),
             command,
             args_json: Some(args),
             working_dir,
@@ -498,6 +504,7 @@ mod tests {
         create(
             conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: handle.into(),
                 display_name: format!("{handle} display"),
                 runtime: crate::model::Runtime::Trae,
@@ -667,6 +674,7 @@ mod tests {
         let role = create(
             &conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "handle-needle".into(),
                 display_name: "Display Needle".into(),
                 runtime: Runtime::Codex,
@@ -783,6 +791,7 @@ mod tests {
         let err = create(
             &conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "shared".into(),
                 display_name: "Dup".into(),
                 runtime: crate::model::Runtime::Trae,
@@ -830,6 +839,7 @@ mod tests {
         let err = create(
             &conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "terminal".into(),
                 display_name: "Terminal".into(),
                 runtime: Runtime::Shell,
@@ -881,6 +891,7 @@ mod tests {
         repo::role::insert(
             &conn,
             &repo::role::RoleRow {
+                execution_target: Default::default(),
                 id: "legacy-shell".into(),
                 handle: "legacy-shell".into(),
                 display_name: "Legacy shell".into(),
@@ -1223,6 +1234,7 @@ mod tests {
         let r = create(
             &conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "codex-tester".into(),
                 display_name: "C".into(),
                 runtime: crate::model::Runtime::Codex,
@@ -1257,6 +1269,7 @@ mod tests {
         let r = create(
             &conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "claude-tester".into(),
                 display_name: "Claude".into(),
                 runtime: crate::model::Runtime::ClaudeCode,
@@ -1288,6 +1301,7 @@ mod tests {
         let r = create(
             &conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "trae-tester".into(),
                 display_name: "TRAE".into(),
                 runtime: crate::model::Runtime::Trae,
@@ -1331,6 +1345,7 @@ mod tests {
         let role = create(
             &conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "copilot-tester".into(),
                 display_name: "Copilot".into(),
                 runtime: crate::model::Runtime::Copilot,
@@ -1377,6 +1392,7 @@ mod tests {
         let role = create(
             &conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "agy-tester".into(),
                 display_name: "Antigravity".into(),
                 runtime: crate::model::Runtime::Antigravity,
@@ -1425,6 +1441,7 @@ mod tests {
         let r = create(
             &conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "paranoid".into(),
                 display_name: "P".into(),
                 runtime: crate::model::Runtime::Codex,
@@ -1457,6 +1474,7 @@ mod tests {
         let r = create(
             &conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "explicit".into(),
                 display_name: "E".into(),
                 runtime: crate::model::Runtime::ClaudeCode,
@@ -1489,6 +1507,7 @@ mod tests {
         let r = create(
             &conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "pi-tester".into(),
                 display_name: "pi-tester".into(),
                 runtime: crate::model::Runtime::Pi,
@@ -1517,6 +1536,7 @@ mod tests {
         let r = create(
             &conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "codex-rt".into(),
                 display_name: "C".into(),
                 runtime: crate::model::Runtime::Codex,
@@ -1600,6 +1620,7 @@ mod tests {
         let r = create(
             &conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "claude-rt".into(),
                 display_name: "C".into(),
                 runtime: crate::model::Runtime::ClaudeCode,
@@ -1664,6 +1685,7 @@ mod tests {
         let r = create(
             &conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "preserve".into(),
                 display_name: "P".into(),
                 runtime: crate::model::Runtime::Codex,
@@ -1707,6 +1729,7 @@ mod tests {
         let r = create(
             &conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "switcher".into(),
                 display_name: "S".into(),
                 runtime: crate::model::Runtime::ClaudeCode,
@@ -1782,6 +1805,7 @@ mod tests {
         let err = create(
             &conn,
             CreateRoleInput {
+                execution_target: Default::default(),
                 handle: "too-long".into(),
                 display_name: "T".into(),
                 runtime: crate::model::Runtime::ClaudeCode,
@@ -1813,6 +1837,7 @@ mod tests {
             &conn,
             &r.id,
             UpdateRoleInput {
+                execution_target: None,
                 display_name: None,
                 runtime: None,
                 command: None,

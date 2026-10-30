@@ -115,6 +115,7 @@ fn mission_spawn_worker_preamble_lands_as_trailing_positional_argv_with_brief() 
             .unwrap()
     };
     let mission = Mission {
+        execution_target: Default::default(),
         id: fresh_mission_id,
         ..mission
     };
@@ -192,6 +193,7 @@ fn codex_mission_spawn_grants_event_log_dir_to_sandbox() {
             .unwrap()
     };
     let mission = Mission {
+        execution_target: Default::default(),
         id: fresh_mission_id,
         ..mission_base
     };

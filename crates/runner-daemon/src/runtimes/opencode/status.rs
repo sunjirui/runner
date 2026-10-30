@@ -216,6 +216,7 @@ mod tests {
         let mut watcher = Watcher::new(
             receiver,
             &SpawnSpec {
+                execution_target: Default::default(),
                 args: strings(&["--session", "ses_launch"]),
                 ..Default::default()
             },
@@ -239,6 +240,7 @@ mod tests {
         let mut watcher = Watcher::new(
             receiver,
             &SpawnSpec {
+                execution_target: Default::default(),
                 args: strings(&["--session", "ses_owned"]),
                 ..Default::default()
             },

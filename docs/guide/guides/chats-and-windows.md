@@ -2,6 +2,11 @@
 
 Arrange separate sessions into split tabs, organize them in the sidebar, and use multiple windows without losing track of which terminal you are controlling.
 
+On Windows, the execution environment selector in **Start a chat** can override a
+role's default with Native or an enabled WSL2 distribution and Linux user. The chat
+header identifies WSL sessions. Resume and fork keep the saved environment. See
+[WSL2 setup](../getting-started/install.md#use-agents-in-wsl2-on-windows).
+
 ## Know the three surfaces
 
 | Surface | What it holds |

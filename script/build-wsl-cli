@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+profile=${RUNNER_WSL_CARGO_PROFILE:-release}
+target=x86_64-unknown-linux-musl
+command -v musl-gcc >/dev/null || { echo 'Install musl-tools before building the WSL CLI.' >&2; exit 1; }
+rustup target add "$target"
+cargo build --locked --profile "$profile" --target "$target" -p runner-cli --features wsl-client
+mkdir -p target/wsl
+directory=$profile
+if [[ "$profile" == dev ]]; then directory=debug; fi
+cp "target/$target/$directory/runner-agent-cli" target/wsl/runner-agent-cli-linux

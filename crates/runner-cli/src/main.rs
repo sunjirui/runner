@@ -5,6 +5,7 @@ mod msg;
 mod output;
 mod roster;
 mod signal;
+mod wsl;
 
 use clap::Parser;
 
@@ -26,6 +27,11 @@ struct DaemonArgs {
 }
 
 fn daemon(args: DaemonArgs) -> Result<(), Box<dyn std::error::Error>> {
+    if cfg!(feature = "wsl-client") || runner_core::wsl_bridge::integrated() {
+        return Err(
+            "WSL integration is managed by Windows Runner; a Linux daemon is not allowed".into(),
+        );
+    }
     use runner_core::{app_paths, daemon_process::NativePaths};
     if args.isolated
         && (args.app_data_dir.is_none()
@@ -73,6 +79,29 @@ fn daemon(args: DaemonArgs) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn main() {
+    if std::env::args().nth(1).as_deref() == Some("--wsl-session") {
+        let result = std::env::args_os()
+            .nth(2)
+            .ok_or_else(|| runner_daemon::error::Error::msg("missing WSL launch directory"))
+            .and_then(|dir| runner_daemon::wsl_session::run_linux(std::path::Path::new(&dir)));
+        match result {
+            Ok(code) => std::process::exit(code),
+            Err(error) => {
+                eprintln!("runner: {error}");
+                std::process::exit(1);
+            }
+        }
+    }
+    if std::env::args().nth(1).as_deref() == Some("--wsl-helper") {
+        if let Err(error) = runner_daemon::wsl::run_helper() {
+            eprintln!("runner: {error}");
+            std::process::exit(1);
+        }
+        return;
+    }
+    if let Some(code) = wsl::entry(&std::env::args().collect::<Vec<_>>()) {
+        std::process::exit(code);
+    }
     if std::env::current_exe()
         .ok()
         .and_then(|path| {

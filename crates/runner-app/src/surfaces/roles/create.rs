@@ -122,6 +122,7 @@ impl NativeRoot {
         form.submitting = true;
         form.error = None;
         let input = CreateRoleInput {
+            execution_target: form.execution_target.clone(),
             handle: form.handle.read(cx).text().to_owned(),
             display_name: form.display_name.read(cx).text().trim().to_owned(),
             runtime,

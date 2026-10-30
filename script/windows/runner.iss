@@ -55,6 +55,7 @@ SignedUninstaller=yes
 ; Nightlies share file versions; every upgrade must replace the payload.
 Source: "{#SourceDir}\Runner.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\runner-agent-cli.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourceDir}\runner-agent-cli-linux"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\conpty.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\OpenConsole.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion

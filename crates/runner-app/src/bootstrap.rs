@@ -156,6 +156,7 @@ mod tests {
             runner_daemon::repo::role::insert(
                 &conn,
                 &runner_daemon::repo::role::RoleRow {
+                    execution_target: Default::default(),
                     id: "r1".into(),
                     handle: "alpha".into(),
                     display_name: "Alpha".into(),

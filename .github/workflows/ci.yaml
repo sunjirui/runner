@@ -16,6 +16,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  wsl-helper:
+    name: WSL Linux CLI
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: wsl-helper
+      - name: Check Linux CLI and owned process cleanup
+        run: |
+          cargo test --locked -p runner-core --lib
+          cargo test --locked -p runner-cli --features wsl-client --test wsl_session --test wsl_bridge
+      - name: Build distributable Linux CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+          bash script/build-wsl-cli
+
   rust:
     name: Rust / macOS
     runs-on: macos-15

@@ -493,6 +493,7 @@ mod tests {
         role::create(
             conn,
             role::CreateRoleInput {
+                execution_target: Default::default(),
                 handle: handle.into(),
                 display_name: format!("{handle} display"),
                 runtime: crate::model::Runtime::Trae,

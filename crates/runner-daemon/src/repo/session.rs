@@ -21,6 +21,8 @@ use super::{de_err, insert_sql, qualified_select_list, select_list, ser_err};
 #[derive(Serialize, Deserialize)]
 struct LaunchDefinitionRow {
     version: u32,
+    #[serde(default)]
+    execution_target: runner_core::ExecutionTarget,
     command: String,
     args: Vec<String>,
     env: BTreeMap<String, String>,
@@ -34,6 +36,7 @@ impl From<&LaunchDefinition> for LaunchDefinitionRow {
     fn from(definition: &LaunchDefinition) -> Self {
         Self {
             version: 1,
+            execution_target: definition.execution_target.clone(),
             command: definition.command.clone(),
             args: definition.args.clone(),
             env: definition.env.clone(),
@@ -66,6 +69,7 @@ impl TryFrom<LaunchDefinitionRow> for LaunchDefinition {
         )
         .map_err(|error| error.to_string())?;
         Ok(Self {
+            execution_target: row.execution_target,
             command: row.command,
             args: row.args,
             env: row.env,
@@ -1197,6 +1201,7 @@ mod tests {
             agent_runtime: Some("codex".into()),
             agent_command: Some("codex".into()),
             launch_definition: Some(LaunchDefinition {
+                execution_target: Default::default(),
                 command: "codex".into(),
                 args: vec!["--search".into()],
                 env: BTreeMap::from([("MARKER".into(), "before".into())]),
@@ -1953,6 +1958,7 @@ mod launch_definition_tests {
         let row = SessionRowDb::new_running("definition".into());
         insert(&conn, &row).unwrap();
         let definition = LaunchDefinition {
+            execution_target: Default::default(),
             command: "codex".into(),
             args: vec![],
             env: BTreeMap::new(),
