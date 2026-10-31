@@ -25,6 +25,9 @@ impl NativeRoot {
         if !remote && self.create_modal_open() {
             return;
         }
+        if self.launcher_start_pending(cx) || self.start_launcher_terminal(window, cx) {
+            return;
+        }
         let pane = if remote {
             self.front_page_layout().and_then(new_terminal_empty_pane)
         } else {
@@ -61,7 +64,10 @@ impl NativeRoot {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.create_modal_open() {
+        if self.create_modal_open() || self.launcher_start_pending(cx) {
+            return;
+        }
+        if self.start_launcher_mission(window, cx) {
             return;
         }
         self.open_start_mission_modal(

@@ -16,10 +16,7 @@ use super::*;
 
 use crate::*;
 
-use gpui::{
-    canvas, linear_color_stop, linear_gradient, quad, svg, BorderStyle, Div, FontWeight, Pixels,
-    Point, Size,
-};
+use gpui::{canvas, quad, svg, BorderStyle, Div, FontWeight, Pixels, Point, Size};
 
 use runner_app::ui::resize::{resize_strip, ResizeAxis};
 
@@ -266,10 +263,7 @@ fn pane_body_opacity(grouped: bool, focused: bool) -> f32 {
 }
 
 fn pane_identity_icon(runtime: Option<&str>) -> ChatIcon {
-    runtime.map_or_else(
-        || ChatIcon::generic("square-dashed.svg"),
-        ChatIcon::for_runtime,
-    )
+    runtime.map_or_else(|| ChatIcon::generic("plus.svg"), ChatIcon::for_runtime)
 }
 
 fn starting_overlay_label(runtime: &str, fork_materializing: bool) -> Option<&'static str> {
@@ -1534,7 +1528,7 @@ mod tests {
         );
         assert!(!side_panel_open(true, true));
 
-        assert_eq!(pane_identity_icon(None).asset_path(), "square-dashed.svg");
+        assert_eq!(pane_identity_icon(None).asset_path(), "plus.svg");
         assert_eq!(pane_close_behavior(None), PaneCloseBehavior::LayoutOnly);
     }
 
@@ -1808,7 +1802,7 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn start_surface_column_stays_480_pixels_wide_and_centred() {
+    fn start_surface_column_stays_440_pixels_wide_and_centred() {
         use crate::{AppRoute, NativeRoot};
         use gpui::{TestAppContext, VisualTestContext};
         use runner_app::pane_layout::TabSet;
@@ -1837,7 +1831,7 @@ mod tests {
             visual.run_until_parked();
             let surface = visual.debug_bounds("START_SURFACE").unwrap();
             let column = visual.debug_bounds("START_SURFACE_COLUMN").unwrap();
-            assert_eq!(column.size.width, px(480.), "window width {width}");
+            assert_eq!(column.size.width, px(440.), "window width {width}");
             assert_eq!(
                 column.center().x,
                 surface.center().x,

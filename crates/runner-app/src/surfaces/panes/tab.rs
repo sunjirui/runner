@@ -180,6 +180,7 @@ impl NativeRoot {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> AnyElement {
+        self.prune_launchers(cx);
         if self.remote_client.is_local() {
             self.ensure_active_chat_detail(cx);
         }
@@ -233,10 +234,27 @@ impl NativeRoot {
                 )
                 .children(error_banner)
                 .children(warning_banner)
-                .child(render_start_surface(
-                    &self.settings(cx).keymap_overrides,
-                    &self.front_page_client(cx),
-                ))
+                .child(
+                    div()
+                        .h(rems(40. / 16.))
+                        .flex_none()
+                        .px(rems(14. / 16.))
+                        .flex()
+                        .items_center()
+                        .gap_2()
+                        .child(
+                            svg()
+                                .path("plus.svg")
+                                .size(rems(15. / 16.))
+                                .text_color(theme::muted()),
+                        )
+                        .child(
+                            div()
+                                .text_size(theme::text_ui())
+                                .child(crate::i18n::text("launcher.new")),
+                        ),
+                )
+                .child(self.render_launcher(None, true, window, cx))
                 .into_any_element();
         };
         if self.remote_client.is_local()

@@ -322,7 +322,7 @@ pub(crate) fn reconcile_tab(
     layout
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) struct RoleChoice {
     pub(crate) id: String,
     pub(crate) handle: String,

@@ -628,7 +628,13 @@ impl CommandPaletteState {
                              shell_cx: &mut Context<NativeRoot>| {
             match destination {
                 PaletteDestination::NewChat => {
-                    shell.open_new_tab_modal(&NewTab, window, shell_cx);
+                    shell.open_sidebar_chat_modal(
+                        runner_core::protocol::project::ProjectScope::or_root(
+                            shell.active_project_id(shell_cx),
+                        ),
+                        window,
+                        shell_cx,
+                    );
                     true
                 }
                 PaletteDestination::NewMission => {

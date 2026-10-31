@@ -147,6 +147,12 @@ impl FrontPageClient {
         self.action("catalog", ActionRequest::Catalog { id: 0 })
     }
 
+    pub(crate) fn role_working_dir(&self, role: String) -> ClientResult<Option<String>> {
+        let record: runner_core::companion::RoleRecord =
+            self.action("role", ActionRequest::Role { id: 0, role })?;
+        Ok(record.working_dir)
+    }
+
     pub(crate) fn mark_viewed(&self, session: String) -> ClientResult<()> {
         if !self.is_remote() {
             return self.daemon.mark_direct_sessions_viewed(&[session]);
@@ -233,33 +239,71 @@ impl FrontPageClient {
             launch.started = Some(session.clone());
             session
         };
-        let mut rename_error = None;
-        if !launch.renamed {
-            if let Some(title) = &launch.title {
-                if let Err(error) = self.rename_session(&session, Some(title.clone())) {
-                    if self.is_remote() {
-                        return Err(error);
-                    }
-                    rename_error = Some(error.to_string());
-                }
-            }
-            launch.renamed = true;
-        }
         let layout = if let Some((layout, pane)) = &launch.placement {
             let mut layout = layout.clone();
             layout
                 .assign_session(pane, &session)
                 .map_err(|error| ClientError::msg(error.to_string()))?;
-            self.layout(&layout, layout.parent_id.clone())?;
+            if self.is_remote() {
+                self.layout(&layout, layout.parent_id.clone())?;
+            } else {
+                self.launcher_layout(&layout, launch.input.project.clone())?;
+            }
             Some(layout)
         } else {
             None
         };
-        Ok(ChatLaunched {
-            session,
-            layout,
-            rename_error,
-        })
+        Ok(ChatLaunched { session, layout })
+    }
+
+    pub(crate) fn launcher_layout(
+        &self,
+        layout: &runner_app::pane_layout::PaneLayout,
+        project: Option<String>,
+    ) -> ClientResult<()> {
+        if self.is_remote() {
+            return self.layout(layout, project);
+        }
+        let nodes = self.daemon.node_list()?;
+        let existing = nodes.iter().find(|node| node.id == layout.id);
+        let existing_project =
+            existing.and_then(|node| crate::surfaces::sidebar::node_project_id(&nodes, node));
+        let parent = if existing.is_some() && existing_project == project {
+            existing.and_then(|node| node.parent_id.clone())
+        } else {
+            project
+                .as_ref()
+                .map(|project| {
+                    nodes
+                        .iter()
+                        .find(|node| {
+                            node.node_type == runner_core::protocol::node::NodeType::Project
+                                && node.ref_id.as_ref() == Some(project)
+                        })
+                        .map(|node| node.id.clone())
+                        .ok_or_else(|| {
+                            ClientError::msg("The selected project is no longer available.")
+                        })
+                })
+                .transpose()?
+        };
+        if let Some(existing) = existing.filter(|existing| existing.parent_id != parent) {
+            let mut order = nodes
+                .iter()
+                .filter(|node| node.parent_id == parent && node.id != existing.id)
+                .collect::<Vec<_>>();
+            order.sort_by_key(|node| node.position);
+            let mut order = order
+                .into_iter()
+                .map(|node| node.id.clone())
+                .collect::<Vec<_>>();
+            order.push(existing.id.clone());
+            self.daemon
+                .node_move(existing.id.clone(), parent.clone(), order)?;
+        }
+        let mut draft = layout.clone();
+        draft.parent_id = parent;
+        self.layout(&draft, project)
     }
 
     pub(crate) fn start_shell(
@@ -671,16 +715,6 @@ impl FrontPageClient {
         .map(|()| None)
     }
 
-    pub(crate) fn rename_session(&self, session: &str, title: Option<String>) -> ClientResult<()> {
-        self.rename_title(
-            ActionTarget {
-                kind: ActionKind::Session,
-                id: session.into(),
-            },
-            title,
-        )
-    }
-
     #[cfg(test)]
     pub(crate) fn pin_chat(
         &self,
@@ -1036,16 +1070,13 @@ pub(crate) struct MissionStop {
 
 pub(crate) struct ChatLaunch {
     pub(crate) input: ChatStart,
-    pub(crate) title: Option<String>,
     pub(crate) placement: Option<(runner_app::pane_layout::PaneLayout, String)>,
     pub(crate) started: Option<String>,
-    pub(crate) renamed: bool,
 }
 
 pub(crate) struct ChatLaunched {
     pub(crate) session: String,
     pub(crate) layout: Option<runner_app::pane_layout::PaneLayout>,
-    pub(crate) rename_error: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

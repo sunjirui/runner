@@ -16,7 +16,7 @@ From the sidebar, a chat with a different agent takes four clicks and a second a
 
 - The launcher replaces the empty-pane picker (`panes/pane.rs`), the default page (`render_start_surface` in `panes/start.rs`, shown when `start_surface_visible`: a window with no tab, or a tab of one empty pane) and the Start a chat form as the way to start chats. It is drawn inside the pane under the island header, whose title is **New** with a plus mark. Nothing opens as an overlay.
 - **New chat** (⌘N), the sidebar's New chat row, a project row's New chat item and the command palette's New chat open a new tab whose only pane shows the launcher. When the focused pane is empty, ⌘N focuses its launcher instead, as ⌘N fills a focused empty pane today.
-- A split (⌘D, ⇧⌘D or the split menu) leaves an empty pane showing the launcher.
+- A split (⌘D, ⇧⌘D or the split menu) leaves an empty pane showing the launcher. In a tab with terminals and no chat panes, a split starts another shell as today, even if that tab also has an empty pane (Jason, 2026-10-31).
 - ⌘T still starts a terminal directly, in the focused empty pane or a new tab, and ⇧⌘M still opens Start mission.
 
 ### Layout

@@ -319,6 +319,8 @@ pub(crate) struct NativeRoot {
     pub(crate) chat_focus: FocusHandle,
     pub(crate) drawer_focus: FocusHandle,
     pub(crate) sidebar: Entity<Sidebar>,
+    pub(crate) launchers:
+        HashMap<String, Entity<crate::surfaces::start_chat::launcher::ChatLauncher>>,
     pub(crate) start_chat_modal: Option<StartChatModal>,
     pub(crate) start_mission_modal: Option<StartMissionModalState>,
     pub(crate) project_modal: Option<ProjectModal>,

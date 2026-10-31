@@ -7,14 +7,13 @@ mod close;
 mod layout;
 
 use super::*;
+use runner_core::protocol::project::ProjectScope;
 
 use crate::surfaces::front_page::actions::WorkspaceAction;
 
 use crate::*;
 
 use runner_core::protocol::model::Runtime;
-
-use runner_core::protocol::project::ProjectScope;
 
 pub(super) fn tab_is_terminal(
     layout: &PaneLayout,

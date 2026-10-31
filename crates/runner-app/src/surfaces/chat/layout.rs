@@ -38,6 +38,9 @@ impl NativeRoot {
         let Some(mut draft) = self.front_page_layout().cloned() else {
             return;
         };
+        if self.launcher_tab_pending(&draft.id, cx) {
+            return;
+        }
         let bounds = self
             .front_page_pane_bounds()
             .get(&PaneKey::new(&draft.id, target_id))
@@ -88,6 +91,9 @@ impl NativeRoot {
         let Some(original) = self.front_page_layout().cloned() else {
             return;
         };
+        if self.launcher_tab_pending(&original.id, cx) {
+            return;
+        }
         let bounds = self
             .front_page_pane_bounds()
             .get(&PaneKey::new(&original.id, pane_id))
@@ -222,6 +228,12 @@ impl NativeRoot {
         cx: &mut Context<Self>,
     ) {
         if !self.front_page_client(cx).supports(&["layout"]) {
+            return;
+        }
+        if self
+            .front_page_layout()
+            .is_some_and(|layout| self.launcher_tab_pending(&layout.id, cx))
+        {
             return;
         }
         let position = event.event.position;

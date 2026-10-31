@@ -78,7 +78,7 @@ impl NativeRoot {
                             .as_deref(),
                     )
                 })
-                .unwrap_or_else(|| crate::i18n::text("ui.empty").into());
+                .unwrap_or_else(|| crate::i18n::text("launcher.new").into());
             let drag_pane = pane_id.clone();
             let drag_session = entry.as_ref().map(|entry| entry.session_id.clone());
             let mark = div()
@@ -377,7 +377,7 @@ impl NativeRoot {
                                 .text_size(theme::text_ui())
                                 .font_weight(FontWeight::MEDIUM)
                                 .text_color(theme::faint())
-                                .child(crate::i18n::text("ui.empty")),
+                                .child(crate::i18n::text("launcher.new")),
                         )
                         .into_any_element(),
                     None,
@@ -489,11 +489,8 @@ impl NativeRoot {
 
         let header = self.render_titlebar_drag_area("island-header-drag", header, cx);
         let body: AnyElement = if start_surface_visible(Some(layout)) {
-            render_start_surface(
-                &self.settings(cx).keymap_overrides,
-                &self.front_page_client(cx),
-            )
-            .into_any_element()
+            self.render_launcher(Some(PaneKey::new(&layout.id, &pane_id)), true, window, cx)
+                .into_any_element()
         } else if let Some(entry) = entry.as_ref() {
             let session_id = entry.session_id.clone();
             let secondary_state = secondary.clone().unwrap_or_default();
@@ -790,103 +787,17 @@ impl NativeRoot {
                 .child(terminal_surface)
                 .children(overlay_element)
                 .into_any_element()
-        } else {
-            let new_chat_pane_id = pane_id.clone();
-            let new_chat_root = cx.entity();
-            let new_terminal_pane_id = pane_id.clone();
-            let new_terminal_root = cx.entity();
-            let overrides = &self.settings(cx).keymap_overrides;
+        } else if leaf.session_id.is_some() {
             div()
                 .flex_1()
                 .flex()
-                .flex_col()
                 .items_center()
                 .justify_center()
-                .child(
-                    div()
-                        .when(cfg!(test), |column| {
-                            column.debug_selector(|| "EMPTY_PANE_START".into())
-                        })
-                        .w(rems(280. / 16.))
-                        .max_w_full()
-                        .flex()
-                        .flex_col()
-                        .items_center()
-                        .gap(rems(12. / 16.))
-                        .child(
-                            div()
-                                .text_size(rems(13. / 16.))
-                                .font_weight(FontWeight::MEDIUM)
-                                .text_color(theme::muted())
-                                .child(crate::i18n::text("ui.open_in_this_pane")),
-                        )
-                        .child(
-                            div()
-                                .w_full()
-                                .p(rems(4. / 16.))
-                                .flex()
-                                .flex_col()
-                                .gap(rems(2. / 16.))
-                                .bg(theme::panel())
-                                .border_1()
-                                .border_color(theme::border())
-                                .rounded(rems(10. / 16.))
-                                .children(
-                                    self.front_page_client(cx)
-                                        .supports(&["catalog", "startChat", "layout"])
-                                        .then(|| {
-                                            empty_pane_action_row(
-                                                "new-chat",
-                                                crate::i18n::text("ui.new_chat"),
-                                                "message-square-plus.svg",
-                                                overrides,
-                                            )
-                                            .id(SharedString::from(format!("new-chat-{pane_id}")))
-                                            .on_click(
-                                                move |_, window, cx| {
-                                                    new_chat_root.update(cx, |this, cx| {
-                                                        this.open_pane_chat_modal(
-                                                            &new_chat_pane_id,
-                                                            window,
-                                                            cx,
-                                                        )
-                                                    });
-                                                },
-                                            )
-                                        }),
-                                )
-                                .children(
-                                    self.front_page_client(cx)
-                                        .supports(&["startShell", "layout"])
-                                        .then(|| {
-                                            empty_pane_action_row(
-                                                "new-terminal",
-                                                crate::i18n::text("ui.new_terminal"),
-                                                "terminal.svg",
-                                                overrides,
-                                            )
-                                            .id(SharedString::from(format!(
-                                                "new-terminal-{pane_id}"
-                                            )))
-                                            .on_click(
-                                                move |_, window, cx| {
-                                                    new_terminal_root.update(cx, |this, cx| {
-                                                        if this.create_modal_open() {
-                                                            return;
-                                                        }
-                                                        this.focus_pane(&new_terminal_pane_id, cx);
-                                                        this.new_terminal_action(
-                                                            &NewTerminal,
-                                                            window,
-                                                            cx,
-                                                        );
-                                                    });
-                                                },
-                                            )
-                                        }),
-                                ),
-                        ),
-                )
+                .text_color(theme::muted())
+                .child(crate::i18n::text("ui.loading"))
+                .into_any_element()
+        } else {
+            self.render_launcher(Some(PaneKey::new(&layout.id, &pane_id)), false, window, cx)
                 .into_any_element()
         };
 

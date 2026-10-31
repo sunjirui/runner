@@ -139,7 +139,8 @@ pub(super) fn model_placeholder(role: Option<&RoleChoice>) -> i18n::Text {
 /// The role whose model, effort and speed the controls start from: only the
 /// role the chat runs on the agent of.
 pub(super) fn inheriting_role(modal: &StartChatModal) -> Option<&RoleChoice> {
-    (modal.mode == ChatMode::Role && modal.on_own_agent())
+    modal
+        .on_own_agent()
         .then(|| modal.selected_role())
         .flatten()
 }
@@ -300,27 +301,17 @@ pub(super) fn set_start_chat_controls_disabled(
     disabled: bool,
     cx: &mut Context<NativeRoot>,
 ) {
-    modal.project.set_disabled(disabled, cx);
-    modal
-        .title
-        .update(cx, |field, field_cx| field.set_disabled(disabled, field_cx));
-    modal
-        .cwd
-        .update(cx, |field, field_cx| field.set_disabled(disabled, field_cx));
     modal.role_select.update(cx, |select, select_cx| {
         select.set_disabled(disabled || modal.roles.is_empty(), select_cx)
     });
     modal.role_runtime_select.update(cx, |select, select_cx| {
         select.set_disabled(disabled, select_cx)
     });
-    modal.runtime_select.update(cx, |select, select_cx| {
-        select.set_disabled(disabled || modal.runtimes.is_empty(), select_cx)
-    });
     sync_runtime_controls(modal, cx);
 }
 
 pub(super) fn start_chat_focus_order(modal: &StartChatModal, cx: &App) -> Vec<FocusHandle> {
-    let mut order = vec![modal.close_focus.clone(), modal.mode_focus()];
+    let mut order = vec![modal.close_focus.clone()];
     let controls = |order: &mut Vec<FocusHandle>| {
         if let Some(runtime) = modal.active_runtime() {
             order.push(modal.model.read(cx).focus_handle());
@@ -332,56 +323,39 @@ pub(super) fn start_chat_focus_order(modal: &StartChatModal, cx: &App) -> Vec<Fo
             order.push(modal.speed_select.read(cx).focus_handle());
         }
     };
-    match modal.mode {
-        ChatMode::Role => {
-            if !modal.roles.is_empty() {
-                order.push(modal.role_select.read(cx).focus_handle());
-            }
-            if modal.selected_role().is_some() {
-                order.push(modal.role_runtime_select.read(cx).focus_handle());
-                controls(&mut order);
-                let overrides = modal.role_overrides(cx);
-                for (shown, focus) in [
-                    (
-                        overrides.runtime,
-                        &modal.reset_focus[ResetKind::Runtime as usize],
-                    ),
-                    (
-                        overrides.model,
-                        &modal.reset_focus[ResetKind::Model as usize],
-                    ),
-                    (
-                        overrides.effort,
-                        &modal.reset_focus[ResetKind::Effort as usize],
-                    ),
-                    (
-                        overrides.speed,
-                        &modal.reset_focus[ResetKind::Speed as usize],
-                    ),
-                ] {
-                    if shown {
-                        order.push(focus.clone());
-                    }
+    {
+        if !modal.roles.is_empty() {
+            order.push(modal.role_select.read(cx).focus_handle());
+        }
+        if modal.selected_role().is_some() {
+            order.push(modal.role_runtime_select.read(cx).focus_handle());
+            controls(&mut order);
+            let overrides = modal.role_overrides(cx);
+            for (shown, focus) in [
+                (
+                    overrides.runtime,
+                    &modal.reset_focus[ResetKind::Runtime as usize],
+                ),
+                (
+                    overrides.model,
+                    &modal.reset_focus[ResetKind::Model as usize],
+                ),
+                (
+                    overrides.effort,
+                    &modal.reset_focus[ResetKind::Effort as usize],
+                ),
+                (
+                    overrides.speed,
+                    &modal.reset_focus[ResetKind::Speed as usize],
+                ),
+            ] {
+                if shown {
+                    order.push(focus.clone());
                 }
             }
         }
-        ChatMode::Runtime => {
-            if !modal.runtimes.is_empty() {
-                order.push(modal.runtime_select.read(cx).focus_handle());
-            }
-            controls(&mut order);
-        }
     }
-    if modal.front_page.supports(&["rename"]) {
-        order.push(modal.title.read(cx).focus_handle());
-    }
-    if !modal.project.locked() {
-        order.push(modal.project.focus_handle(cx));
-    }
-    order.push(modal.cwd.read(cx).focus_handle());
-    if modal.front_page.supports(&["folders"]) {
-        order.push(modal.browse_focus.clone());
-    }
+
     order.push(modal.cancel_focus.clone());
     if modal.can_submit() {
         order.push(modal.submit_focus.clone());

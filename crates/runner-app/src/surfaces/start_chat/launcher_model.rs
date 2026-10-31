@@ -60,7 +60,13 @@ impl RecentStore {
     }
 
     pub(crate) fn save(&self, directory: &Path) -> std::io::Result<()> {
-        fs::write(directory.join(FILE), serde_json::to_vec(self)?)
+        use std::io::Write;
+        let mut temporary = tempfile::NamedTempFile::new_in(directory)?;
+        temporary.write_all(&serde_json::to_vec(self)?)?;
+        temporary
+            .persist(directory.join(FILE))
+            .map_err(|error| error.error)?;
+        Ok(())
     }
 }
 
@@ -126,7 +132,6 @@ pub(crate) fn ranked<'a>(
                     }
                 })
         });
-        found.truncate(4);
     } else {
         found.sort_by(|a, b| {
             match_rank(a, query)
@@ -135,6 +140,7 @@ pub(crate) fn ranked<'a>(
                 .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
         });
     }
+    found.truncate(4);
     found
 }
 

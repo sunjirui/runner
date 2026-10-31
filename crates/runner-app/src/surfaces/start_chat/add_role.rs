@@ -16,6 +16,25 @@ pub(super) struct MissionRoleForm {
     _task_subscription: gpui::Subscription,
 }
 
+#[cfg(test)]
+impl MissionRoleForm {
+    pub(super) fn fixture(cx: &mut Context<NativeRoot>) -> Self {
+        let handle = cx.new(|cx| TextField::new(cx.focus_handle(), "test", "handle", true));
+        let task = cx.new(|cx| TextField::new(cx.focus_handle(), "", "task", false));
+        Self {
+            mission_id: "test-mission".into(),
+            title: "Test mission".into(),
+            cwd: "/tmp".into(),
+            current: HashSet::new(),
+            removed: HashSet::new(),
+            _handle_subscription: cx.observe(&handle, |_, _, cx| cx.notify()),
+            _task_subscription: cx.observe(&task, |_, _, cx| cx.notify()),
+            handle,
+            task,
+        }
+    }
+}
+
 fn handle_error(form: &MissionRoleForm, cx: &App) -> Option<crate::i18n::Text> {
     runner_app::ui::field::slot_handle_error(
         form.handle.read(cx).text(),
@@ -48,7 +67,7 @@ impl NativeRoot {
         if self.create_modal_open() {
             return;
         }
-        self.open_start_chat_modal(ChatTarget::NewTab, None, None, window, cx);
+        self.open_add_role_form(window, cx);
         let handle = cx.new(|cx| TextField::new(cx.focus_handle(), "", "handle", true));
         handle.update(cx, |field, cx| field.set_bare(true, cx));
         let task = cx.new(|cx| {
@@ -81,7 +100,6 @@ impl NativeRoot {
         });
         let task_subscription = cx.observe(&task, |_, _, cx| cx.notify());
         if let Some(modal) = self.start_chat_modal.as_mut() {
-            modal.mode = ChatMode::Role;
             modal.mission_role = Some(MissionRoleForm {
                 mission_id: mission.id,
                 title: mission.title,
@@ -331,12 +349,6 @@ impl NativeRoot {
                     ),
             );
         let mut focus = start_chat_focus_order(modal, cx);
-        focus.retain(|item| {
-            *item != modal.title.read(cx).focus_handle()
-                && *item != modal.cwd.read(cx).focus_handle()
-                && *item != modal.browse_focus
-                && *item != modal.role_mode_focus
-        });
         focus.insert(
             focus.len().saturating_sub(2),
             form.handle.read(cx).focus_handle(),

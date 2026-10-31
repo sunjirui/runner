@@ -142,8 +142,6 @@ actions!(
         NewMission,
         ConfirmStartChat,
         ConfirmStartMission,
-        StartChatDirect,
-        StartChatRole,
         NewWindow,
         OpenSettings,
         Quit,

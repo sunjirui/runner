@@ -11,6 +11,9 @@ impl NativeRoot {
         let Some(mut draft) = self.front_page_layout().cloned() else {
             return;
         };
+        if self.launcher_tab_pending(&draft.id, cx) {
+            return;
+        }
         let closing_session_id = draft
             .root
             .leaves()
@@ -59,6 +62,9 @@ impl NativeRoot {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.launcher_session_pending(session_id, cx) {
+            return;
+        }
         let remote = self.front_page_client(cx).is_remote();
         if !remote
             && self
@@ -124,6 +130,9 @@ impl NativeRoot {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.launcher_session_pending(session_id, cx) {
+            return;
+        }
         if self.remote_client.is_active() {
             TerminalCloseConfirm::open(
                 &mut self.terminal_close_confirm,
@@ -169,6 +178,9 @@ impl NativeRoot {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.launcher_session_pending(session_id, cx) {
+            return;
+        }
         if self.remote_client.is_active() {
             if let Some(layout) = self.front_page_layout() {
                 let target = archive_chat_pane_target(layout, pane_id, session_id);
@@ -198,7 +210,6 @@ impl NativeRoot {
         cx.notify();
     }
 
-    #[cfg(not(test))]
     pub(crate) fn request_close_single_pane_tab(
         &mut self,
         window: &mut Window,
@@ -208,6 +219,9 @@ impl NativeRoot {
             return;
         };
         let tab_id = layout.id.clone();
+        if self.launcher_tab_pending(&tab_id, cx) {
+            return;
+        }
         let pane_id = layout.focused_pane_id.clone();
         let session_id = layout.focused_session_id().map(str::to_owned);
         let shell_ids = layout.drawer_shells().to_vec();
@@ -287,6 +301,9 @@ impl NativeRoot {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.launcher_tab_pending(tab_id, cx) {
+            return;
+        }
         if self.remote_client.is_active() {
             self.select_remote_item(
                 crate::surfaces::remote_client::RemoteItem::Tab(tab_id.into()),
@@ -338,6 +355,9 @@ impl NativeRoot {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.launcher_session_pending(session_id, cx) {
+            return;
+        }
         let remote = self.front_page_client(cx).is_remote();
         if !remote {
             self.terminal_close_confirm = None;

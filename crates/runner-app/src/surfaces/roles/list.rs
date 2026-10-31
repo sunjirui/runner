@@ -163,12 +163,12 @@ impl NativeRoot {
         }
     }
 
-    fn role_page_surfaces(&self) -> &RoleSurfaces {
+    pub(super) fn role_page_surfaces(&self) -> &RoleSurfaces {
         self.remote_client
             .role_surfaces()
             .unwrap_or(&self.role_surfaces)
     }
-    fn role_page_surfaces_mut(&mut self) -> &mut RoleSurfaces {
+    pub(super) fn role_page_surfaces_mut(&mut self) -> &mut RoleSurfaces {
         self.remote_client
             .role_surfaces_mut()
             .unwrap_or(&mut self.role_surfaces)

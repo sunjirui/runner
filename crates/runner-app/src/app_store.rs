@@ -296,6 +296,7 @@ pub(crate) struct AppStore {
     >,
     pub(crate) client: DaemonClient,
     pub(crate) app_data_dir: PathBuf,
+    pub(crate) launcher_tabs_pending: crate::surfaces::start_chat::launcher::PendingLauncherTabs,
     pub(crate) window_entries: Vec<runner_core::protocol::WindowEntry>,
     pub(crate) bridge: Arc<TerminalBridge>,
     #[cfg(test)]
@@ -572,6 +573,9 @@ impl AppStore {
                             }
                         }
                         this.refresh(refresh, cx);
+                        if entity_refresh == EntityRefreshKind::All {
+                            this.refresh_roles_inner();
+                        }
                         if entity_refresh.roles() {
                             this.revisions.role_surfaces =
                                 this.revisions.role_surfaces.wrapping_add(1);
@@ -684,6 +688,7 @@ impl AppStore {
             remote_warning: None,
             terminal_updates,
             terminal_labels: BTreeMap::new(),
+            launcher_tabs_pending: Arc::default(),
             app_data_dir: host.app_data_dir.clone(),
             client,
             window_entries: Vec::new(),

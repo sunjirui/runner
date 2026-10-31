@@ -1,100 +1,4 @@
 use super::*;
-use crate::surfaces::{
-    front_page::model::RuntimeChoice,
-    start_chat::{ChatMode, ChatTarget},
-};
-use runner_core::protocol::project::ProjectScope;
-
-impl RemoteClient {
-    pub(in crate::surfaces) fn open_remote_start_chat_with_role(
-        &mut self,
-        target: ChatTarget,
-        scope: ProjectScope,
-        default_role_id: Option<String>,
-        window: &mut Window,
-        cx: &mut Context<NativeRoot>,
-    ) {
-        let client = self.client(cx);
-        let required = if matches!(target, ChatTarget::Pane { .. }) {
-            vec!["catalog", "startChat", "layout"]
-        } else {
-            vec!["catalog", "startChat"]
-        };
-        if !client.supports(&required) {
-            return;
-        }
-        let remote = self.workspace.as_mut().unwrap();
-        if !remote.actions_pending.insert("catalog".into()) {
-            return;
-        }
-        remote.form_generation += 1;
-        let generation = remote.form_generation;
-        let epoch = self.ui.epoch;
-        let guard = client.clone();
-        let work = cx.background_spawn(async move { client.catalog() });
-        cx.spawn_in(window, async move |weak, cx| {
-            let result = work.await;
-            let _ = weak.update_in(cx, |root, window, cx| {
-                if root.remote_client.ui.epoch != epoch || !guard.valid() {
-                    return;
-                }
-                let Some(remote) = root.remote_client.workspace.as_mut() else {
-                    return;
-                };
-                remote.actions_pending.remove("catalog");
-                if remote.form_generation != generation {
-                    cx.notify();
-                    return;
-                }
-                match result {
-                    Ok(catalog) => {
-                        if default_role_id
-                            .as_ref()
-                            .is_some_and(|id| !catalog.roles.iter().any(|role| &role.id == id))
-                        {
-                            remote.action_error =
-                                Some(crate::i18n::text("client.role_unavailable").to_owned());
-                            cx.notify();
-                            return;
-                        }
-                        let role_launch = default_role_id.is_some();
-                        remote.catalog = Some(catalog.clone());
-                        let roles = catalog.roles.clone().into_iter().map(Into::into).collect();
-                        let runtimes = catalog
-                            .runtimes
-                            .iter()
-                            .filter_map(RuntimeChoice::remote)
-                            .collect();
-                        root.build_start_chat_modal(
-                            target,
-                            default_role_id,
-                            roles,
-                            runtimes,
-                            Vec::new(),
-                            scope,
-                            String::new(),
-                            String::new(),
-                            false,
-                            None,
-                            None,
-                            guard,
-                            Some(catalog),
-                            window,
-                            cx,
-                        );
-                        if role_launch {
-                            root.switch_start_chat_mode(ChatMode::Role, window, cx);
-                        }
-                    }
-                    Err(error) => remote.action_error = Some(error.to_string()),
-                }
-                root.sync_remote_state(cx);
-                cx.notify();
-            });
-        })
-        .detach();
-    }
-}
 
 pub(crate) struct ChatLaunchAction {
     client: crate::surfaces::front_page::FrontPageClient,
@@ -109,10 +13,15 @@ impl RemoteClient {
         client: crate::surfaces::front_page::FrontPageClient,
         placement: Option<&(PaneLayout, String)>,
     ) -> Option<ChatLaunchAction> {
+        if placement.is_some_and(|(layout, _)| self.layout_pending(&layout.id)) {
+            return None;
+        }
         let remote = self.workspace.as_mut()?;
         let key = placement.map(|(layout, _)| format!("layout:{}", layout.id));
         if let Some(key) = &key {
-            remote.actions_pending.insert(key.clone());
+            if !remote.actions_pending.insert(key.clone()) {
+                return None;
+            }
         }
         Some(ChatLaunchAction {
             client,
