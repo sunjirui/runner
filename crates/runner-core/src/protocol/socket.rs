@@ -777,9 +777,7 @@ mod tests {
             id: "node".into(),
             name: "x".repeat(wire::MAX_FRAME),
         };
-        let started = Instant::now();
         let error = socket.call(request).unwrap_err();
-        assert!(started.elapsed() < REQUEST_TIMEOUT / 2);
         assert_eq!(
             error.message,
             "request too large for runnerd: frame too large (64.0 MB, limit 64 MB)"

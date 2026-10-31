@@ -806,9 +806,12 @@ fn cat_echo_and_da1_reply_once_with_zero_and_two_mirrors() {
             held.push(b.attach(&shell.id).unwrap());
         }
         let path = reply.to_str().unwrap().replace('\'', "'\\''");
-        let script = format!("stty raw -echo; printf '\\033[c'; dd bs=1 count=5 2>/dev/null | od -An -tx1 >'{path}'; sleep 0.2; stty min 0 time 1; dd bs=1 count=100 2>/dev/null | od -An -tx1 >>'{path}'; stty min 1 time 0; printf '\\r\\nDA_READY\\r\\n'; exec cat\n");
+        std::fs::write(daemon.root.path().join(format!("da1-{mirrors}.sh")), format!("stty raw -echo; printf '\\033[c'; dd bs=1 count=5 2>/dev/null | od -An -tx1 >'{path}'; sleep 0.2; stty min 0 time 1; dd bs=1 count=100 2>/dev/null | od -An -tx1 >>'{path}'; stty min 1 time 0; printf '\\r\\nDA_READY\\r\\n'; exec cat\n")).unwrap();
         let mut frames = client.attach(&shell.id).unwrap().frames;
-        client.input(&shell.id, script.as_bytes()).unwrap();
+        // A line editor can echo typed input a byte per frame; a long typed script outran the 64-frame queue.
+        client
+            .input(&shell.id, format!(". ./da1-{mirrors}.sh\n").as_bytes())
+            .unwrap();
         output_until(&mut frames, b"\r\nDA_READY\r\n");
         assert_eq!(
             std::fs::read_to_string(reply)
