@@ -844,7 +844,34 @@ mod tests {
                     assert!(
                         lifecycle.left() >= status.right() && lifecycle.right() <= actions.left(), "pane={pane_width}, status={status:?}, action={lifecycle:?}, controls={actions:?}, identity={:?}", visual.debug_bounds("ISLAND_HEADER_IDENTITY")
                     );
+                    assert!(
+                        (actions.left() - lifecycle.right() - px(8. * zoom + 1.)).abs() < px(0.5)
+                    );
                     assert!(actions.right() <= header.right() && header.right() < pane.right());
+                    host.update(&mut visual, |_, _, cx| {
+                        store.update(cx, |store, _| {
+                            store.session_statuses.insert(
+                                "direct-agent".into(),
+                                AgentStatus {
+                                    lifecycle: Lifecycle::Running,
+                                    observation: AgentObservation {
+                                        activity: Activity::Ready,
+                                        ..Default::default()
+                                    },
+                                    ..Default::default()
+                                },
+                            );
+                        });
+                        cx.notify();
+                    })
+                    .unwrap();
+                    visual.run_until_parked();
+                    assert!(visual.debug_bounds("ISLAND_STATUS_DETAIL").is_none());
+                    assert_eq!(
+                        visual.debug_bounds("PANE_LIFECYCLE:Stop chat"),
+                        Some(lifecycle),
+                        "pane={pane_width}, zoom={zoom}"
+                    );
                 }
             }
         }
