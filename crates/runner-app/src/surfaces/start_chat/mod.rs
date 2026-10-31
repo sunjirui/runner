@@ -1,5 +1,7 @@
 mod controls;
 mod launch;
+#[cfg(test)]
+mod launcher_model;
 mod modal;
 mod render;
 mod terminal;
