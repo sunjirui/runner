@@ -1,9 +1,9 @@
 # 1086 — Pane islands, and terminals without a lifecycle
 
 > Tracking issue: [#1086](https://github.com/yicheng47/runner/issues/1086), which absorbed [#900](https://github.com/yicheng47/runner/issues/900) (closed 2026-10-30).
-> Status: in development. Design signed off by Jason on 2026-10-30.
+> Status: shipped in 0.19.0 on 2026-10-31, through [#1087](https://github.com/yicheng47/runner/pull/1087) and [#1091](https://github.com/yicheng47/runner/pull/1091); the grip repair for [#1093](https://github.com/yicheng47/runner/issues/1093) landed with #1092's launcher in [#1094](https://github.com/yicheng47/runner/pull/1094). Design signed off by Jason on 2026-10-30. Validation: [macOS QA record](../../tests/archive/1086-pane-islands.md).
 > Design: `runner/desktop/specs/1086-pane-islands.pen` in `yeelinks_design` (mission board at `0c7df46`; light palette at `c716cbf`; scrollbar board “Sidebar scrollbar · B” at `29aa9ca`; lifecycle board “Island header · lifecycle control” at `2588dac`, with the button's placement set by “Island header · lifecycle button pinned right” (Jason, 2026-10-31); stopped-chat board at `7a0f20b`); the #634 screens in `runner/desktop/specs/634-file-preview.pen` are drawn in the same islands.
-> Related: [634](./634-file-preview-and-review.md) (the side panel's file preview), [#567](https://github.com/yicheng47/runner/issues/567) (pane × archives).
+> Related: [634](../634-file-preview-and-review.md) (the side panel's file preview), [#567](https://github.com/yicheng47/runner/issues/567) (pane × archives).
 
 ## Motivation
 
@@ -98,4 +98,4 @@ Every platform passes a fixed minimum when opening a window: `(saved sidebar wid
 
 ## Affected documentation
 
-[Appearance](../guide/guides/appearance.md), [Missions](../guide/concepts/missions.md), [Sessions](../guide/concepts/sessions.md), [Chats and windows](../guide/guides/chats-and-windows.md), [First chat](../guide/getting-started/first-chat.md), [Remote access](../guide/guides/remote-access.md) where it lists drawer shells, [Keyboard shortcuts](../guide/reference/keyboard-shortcuts.md), and their zh-CN copies; [architecture §3.6](../arch/arch.md#36-surface-hierarchy--project--window--tab--pane) and the drawer and shell paragraphs it links; the [workspace regression suite](../tests/regression/workspace.md) rows for drawers (WS-DRAWER-01/02), shells (WS-SHELL-*) and the work card (WS-CARD-*).
+[Appearance](../../guide/guides/appearance.md), [Missions](../../guide/concepts/missions.md), [Sessions](../../guide/concepts/sessions.md), [Chats and windows](../../guide/guides/chats-and-windows.md), [First chat](../../guide/getting-started/first-chat.md), [Remote access](../../guide/guides/remote-access.md) where it lists drawer shells, [Keyboard shortcuts](../../guide/reference/keyboard-shortcuts.md), and their zh-CN copies; [architecture §3.6](../../arch/arch.md#36-surface-hierarchy--project--window--tab--pane) and the drawer and shell paragraphs it links; the [workspace regression suite](../../tests/regression/workspace.md) rows for drawers (WS-DRAWER-01/02), shells (WS-SHELL-*) and the work card (WS-CARD-*).

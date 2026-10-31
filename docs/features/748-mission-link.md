@@ -3,7 +3,7 @@
 > Tracking issue: [#748](https://github.com/yicheng47/runner/issues/748). Priority: P0, milestone 0.18. Platforms: macOS, Windows and Linux.
 > Status: draft, 2026-10-27; merged to `main` as a spec on 2026-10-30, ahead of its code. The surface needs a design before implementation; see [Design](#design) and [Decisions to confirm](#decisions-to-confirm).
 > Replaces the watch-delivery proposal (2026-09-29, refreshed 2026-10-17), on hold since Jason rejected Runner typing mission updates into a normal chat; see [Superseded design](#superseded-design).
-> Related: #686's watch contract ([test record](../tests/archive/686-watch-cli-started-missions.md)), which this retires; [704](https://github.com/yicheng47/runner/issues/704), which first specified `RUNNER_SESSION_ID` and closed unbuilt; [#701](https://github.com/yicheng47/runner/issues/701)'s desktop notifications, which already report the states this shows; [873](./873-remove-mission-lead.md), which removed the mission lead; [#916](https://github.com/yicheng47/runner/issues/916)'s verbs.
+> Related: #686's watch contract ([test record](../tests/archive/686-watch-cli-started-missions.md)), which this retires; [704](https://github.com/yicheng47/runner/issues/704), which first specified `RUNNER_SESSION_ID` and closed unbuilt; [#701](https://github.com/yicheng47/runner/issues/701)'s desktop notifications, which already report the states this shows; [873](https://github.com/yicheng47/runner/blob/2a22742e0b89e1a8711c858c0b11532cb04497f4/docs/features/873-remove-mission-lead.md), which removed the mission lead; [#916](https://github.com/yicheng47/runner/issues/916)'s verbs.
 
 ## Motivation
 

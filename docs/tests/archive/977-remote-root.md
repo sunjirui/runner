@@ -46,3 +46,7 @@ Before revision gates: use the complete app run to cover role/crew filtering/pag
 The required literal counts are 577 → 544 root methods, 263 → 0 `remote_window` identifiers and 75 → 14 mission-source `self.remote` references. The comparable whitespace-tolerant mission consumer-access metric is 82 → 39, counting the old field versus the new mode/broad-selector calls inside `impl MissionWorkspace` only. All 39 remaining consumer calls are mode guards; none uses a broad remote-state accessor. Production viewer consumers have zero `workspace()`/`workspace_mut()` calls; those full-state APIs exist only for test inspection. The plan records the exact scan scope and deliberately retained boundaries.
 
 The revised app suite passed (771 binary tests, 168 library tests and integration suites). The first revised Clippy gate rejected one unnecessary lazy fallback and the repeated shell-stage type complexity; the fallback is simplified and the existing stage type now has one shared alias. No tests failed; the corrected Clippy/workspace gates pass without suppressions.
+
+## Regression maintenance, 0.19.0
+
+None apply: this changed ownership and callback routing without intended behavior changes. Its automated checks stay with the owning tests, and no live case was added.

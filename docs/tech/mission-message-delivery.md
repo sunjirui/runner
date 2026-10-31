@@ -1,6 +1,6 @@
 # Mission message delivery: from the log to an agent's inbox
 
-Updated for #1046 on 2026-10-30. This note follows the implemented delivery path for mission members: message storage, inbox projection, terminal notification, reading and recovery. The broader [sessions and routing walkthrough](./sessions-and-routing.md) explains daemon and session ownership; [architecture §8.5](../arch/arch.md#85-delivery-model) defines the delivery model. [#1046](../features/1046-hook-inbox-delivery.md) adds idle-only notices, a ten-minute cap on screen-observed draft holds and cleanup of orphaned input-method compositions.
+Updated for #1046 on 2026-10-30. This note follows the implemented delivery path for mission members: message storage, inbox projection, terminal notification, reading and recovery. The broader [sessions and routing walkthrough](./sessions-and-routing.md) explains daemon and session ownership; [architecture §8.5](../arch/arch.md#85-delivery-model) defines the delivery model. [#1046](https://github.com/yicheng47/runner/issues/1046) adds idle-only notices, a ten-minute cap on screen-observed draft holds and cleanup of orphaned input-method compositions.
 
 ## 1. What delivery means
 
@@ -19,6 +19,8 @@ The notice contains a count and an instruction, not the message bodies. The agen
 | Inbox read acknowledged | An unfiltered read printed and flushed a captured batch, then appended an acknowledgment. | The agent understood or completed the requested work. |
 
 Messages and read acknowledgments survive session stops and daemon restarts in the log. Notification attempts are temporary bookkeeping reconstructed from the remaining unread backlog. Duplicate notices are possible; exactly-once execution of the work is outside this protocol.
+
+Typing into the composer is the only channel today. Native channels that avoid the composer (`PostToolUse` and `Stop` hooks while working, Claude Code's `asyncRewake` and a Codex app-server connection while idle) are not built; #1046's deleted spec records that direction at a [fixed revision](https://github.com/yicheng47/runner/blob/a23d578f1b6a07312df580f658de3a46f3f14248/docs/features/1046-hook-inbox-delivery.md#later-native-channels).
 
 ## 2. One message end to end
 

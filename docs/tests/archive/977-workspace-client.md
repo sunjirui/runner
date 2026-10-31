@@ -63,3 +63,7 @@ The first candidate only wrapped local calls inside existing operation forks and
 | Project deletion | `confirm_delete_project` operation closure | Native confirmed deletion versus remote running-member confirmation, with existing error text. |
 
 Remaining target forks choose the computer/pairing UI, palettes/chrome, native versus host catalogs and folder pickers, local-only configuration editors, layout/cache ownership, terminal transport, or completion scheduling. They do not select a second command implementation for the audited operations. The method/reference counts in the plan measure this retained presentation ownership separately; PR (b) still requires Jason's next authorization.
+
+## Regression maintenance, 0.19.0
+
+None apply: this rerouted operation dispatch without intended behavior changes. Its automated checks stay with the owning tests, and no live case was added.

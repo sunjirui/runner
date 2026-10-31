@@ -10,14 +10,14 @@ Use [Full smoke test procedure](../full-smoke-test.md) for authorization, candid
 | --- | --- | ---: | ---: | ---: |
 | Runtime lifecycle, conversation identity, status and hooks | [runtimes.md](runtimes.md) | 48 | 10 | 38 |
 | Native terminal rendering, input, resize and history | [terminal.md](terminal.md) | 28 | 5 | 23 |
-| Windows, tabs, panes, sidebar and its Active view, cwd and drawers | [workspace.md](workspace.md) | 38 | 6 | 32 |
-| Crews, missions, membership, delivery, asks, feed and watches | [missions.md](missions.md) | 42 | 4 | 38 |
+| Windows, tabs, panes, sidebar and its Active view, cwd and drawers | [workspace.md](workspace.md) | 41 | 6 | 35 |
+| Crews, missions, membership, delivery, asks, feed and watches | [missions.md](missions.md) | 43 | 4 | 39 |
 | Quit, daemon lifetime, reconnect and recovery | [daemon.md](daemon.md) | 22 | 4 | 18 |
 | Agents, Claude accounts, settings, list preferences, language, notifications, skills, MCP, installation and updates | [settings.md](settings.md) | 49 | 4 | 45 |
 | Candidate CLI commands, output, feeds and connection | [cli.md](cli.md) | 13 | 4 | 9 |
-| Remote access: account, Local only, pairing, remote windows, terminals and missions | [remote.md](remote.md) | 44 | 6 | 38 |
+| Remote access: account, Local only, pairing, remote windows, terminals and missions | [remote.md](remote.md) | 46 | 6 | 40 |
 | Linux desktop, input, packages, updates, service and hosted remote acceptance | [linux.md](linux.md) | 7 | 0 | 7 |
-| **Total** | | **291** | **43** | **248** |
+| **Total** | | **297** | **43** | **254** |
 
 `regression/` holds this README and one table file per area, with feature sections. Historical feature records remain in `../archive/` and are never edited to turn their old result into a current result. New run results live separately at `docs/tests/runs/YYYY-MM-DD-<platform>.md`, where platform is `mac`, `win`, `linux` or `both`. Repeated runs on the same day append a separately identified candidate/attempt block to that file. No run record is needed merely to edit this suite.
 
@@ -67,6 +67,8 @@ Follow the results table with findings (expected/actual, minimal repro, severity
 When a feature's test record is archived in a [release's docs sweep](../../../AGENTS.md#docs-sweep-at-release), add its lasting live checks here, or have the record state why none apply. Trace every promoted case to its record/spec/issue/code, reconcile its expectation with current code, set platform/needs/tier and retain the evidence requirements. Results, temporary investigation recipes and automated-only assertions stay with the run/archive or owning test. Change navigation/counts when adding or retiring rows, check all relative links with a script and review at least two cases per area against origin and current code.
 
 ## Not carried over
+
+The 0.19.0 sweep corrected the mission count for `MIS-DRAFT-08`, which #1046 added, and added `WS-CREATE-10` and `WS-CHROME-06` from #1092's [record](../archive/1092-chat-terminal-launcher.md), `WS-SCROLL-01` from [#1086](../archive/1086-pane-islands.md), and `REMOTE-PAIR-08` and `REMOTE-PAIR-09` from #1044's live checks, appended rather than folded into `REMOTE-PAIR-01`. The other #1046, #1086 and #1092 checks were already updated in their pull requests. The #977 refactors add none. Jason's manual drag, gutter and scrollbar checks, the blocked drawer upgrade and the platform gaps stay in the archived records; promotion establishes no new test pass.
 
 The 0.18.3 sweep corrected the stale runtime and mission counts to match their existing rows, then promoted `WS-CREATE-07`–`09`, `REMOTE-CHAT-05`, `REMOTE-WIN-05` and seven Linux cases. Existing `RT-STATUS-12/14/15`, `MIS-WAIT-02/03` and mission crew/draft rows retain the status, shared-goal and router contracts. Candidate-specific failed attempts, native gaps and waived Linux review checks stay in the archived records; promotion establishes no new test pass.
 

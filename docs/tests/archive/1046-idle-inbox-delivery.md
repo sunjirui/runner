@@ -63,3 +63,7 @@ The normal ten-minute sidecar was rebuilt and relaunched before final validation
 Only this run's Codex trust entry was removed; the complete config returned byte-for-byte to its pre-run snapshot (`codex-config-final.diff` is empty). Claude used the existing `.claude-work` account directory, discovered from its test transcript rather than the default `.claude.json` snapshot taken before launch. Its actual account's pre-launch projects snapshot is therefore unavailable. Cleanup removed only the exact new canonical test-folder project entry from `.claude-work/.claude.json` and verified the rest of its projects map unchanged against the pre-cleanup snapshot; `claude-projects-cleanup.diff` records this narrow cleanup. No authentication, effort, extension or permission settings were changed to obtain a pass.
 
 No confirmed product failures remain from these checks. Windows MIS-MSG-03 is the required disclosed platform gap and remains for Jason. Live control handover was not exercised because no second terminal-control client was used. The unchanged two-minute warning and pi-native cap exception were not added to this narrow live matrix. All selected accessible macOS workflows passed with the method and configuration limits above.
+
+## Regression maintenance, 0.19.0
+
+Its selected checks are MIS-MSG-01, MIS-MSG-03, MIS-MSG-06, MIS-DRAFT-01, MIS-DRAFT-02 and MIS-DRAFT-08 in [missions](../regression/missions.md), updated in the implementing PR. The Windows MIS-MSG-03 gap and the temporary 30-second cap method remain evidence above.

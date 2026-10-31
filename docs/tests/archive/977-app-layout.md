@@ -39,3 +39,7 @@ The earlier default-limit candidate run and its repeat each failed one test afte
 Count physical Rust lines, including production comments and blank lines, excluding test-only files and inline items whose `cfg` gates cannot compile with `test=false`. Mixed `any(..., test)` branches remain counted when they can compile in production. Apply the same parser-based method to base and candidate.
 
 App production files over 1,000 lines decrease from **22 to 15**. `main.rs` decreases from **2,087 to 5** production lines. The largest new production module is `surfaces/settings/page/mod.rs` at **1,118** lines. The only remaining file above approximately 1,500 is unchanged, out-of-scope `terminal/element.rs` at **1,515** lines. The PR contains the complete before/after table for every touched Rust path.
+
+## Regression maintenance, 0.19.0
+
+None apply: this was a behavior-preserving module restructure. Its automated checks stay with the owning tests, and no live case was added.
