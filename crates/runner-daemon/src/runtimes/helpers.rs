@@ -256,6 +256,10 @@ pub(super) fn hook_env(
     ])
 }
 
+/// The reporter bounds its own delivery to `hook::DEADLINE`, so this only
+/// covers starting it: on Windows a shell plus `runner.exe` can pass 2 s.
+pub(super) const HOOK_TIMEOUT_SECS: u64 = 10;
+
 pub(super) fn hook_report_command(
     app_data_dir: &Path,
     runtime: Runtime,
