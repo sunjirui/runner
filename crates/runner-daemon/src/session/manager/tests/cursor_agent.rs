@@ -191,7 +191,7 @@ fn cursor_closed_conversation_clears_key_without_stopping_output_forwarder() {
         pool.clone(),
         events.clone(),
         role("cursor", &[]),
-        false,
+        None,
         false,
         None,
         data.path().to_path_buf(),

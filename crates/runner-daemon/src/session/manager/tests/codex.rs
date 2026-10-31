@@ -1050,7 +1050,7 @@ fn codex_native_forwarder_publishes_without_a_mounted_client_for_chats_and_missi
                 pool_with_schema(),
                 events.clone(),
                 role("fake", &[]),
-                false,
+                None,
                 false,
                 sink,
                 root.path().to_path_buf(),

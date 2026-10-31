@@ -75,7 +75,7 @@ fn forward_queued_output(items: Vec<RuntimeOutput>) -> Vec<ForwardedEvent> {
         pool_with_schema(),
         capture.clone(),
         role("fake", &[]),
-        false,
+        None,
         false,
         None,
         app_data.path().to_path_buf(),
@@ -135,7 +135,7 @@ fn codex_session_starts_rekey_current_running_row_for_direct_and_mission() {
                 Arc::clone(&pool),
                 events.clone(),
                 role("fake", &[]),
-                false,
+                None,
                 false,
                 None,
                 app_data.path().to_path_buf(),
@@ -221,7 +221,7 @@ fn codex_session_starts_cannot_rekey_older_or_stopped_rows() {
             Arc::clone(&pool),
             events.clone(),
             role("fake", &[]),
-            false,
+            None,
             false,
             None,
             app_data.path().to_path_buf(),
@@ -288,7 +288,7 @@ fn forwarder_delivers_a_cursor_burst_without_waiting_for_eof() {
         pool_with_schema(),
         capture.clone(),
         role("fake", &[]),
-        false,
+        None,
         false,
         None,
         app_data.path().to_path_buf(),
@@ -441,4 +441,66 @@ fn rejected_key_cleanup_preserves_attachment_and_measurement_during_persistence(
         .is_err());
     assert_eq!(manager.latest_requested_size("measured"), Some((120, 40)));
     assert_eq!(manager.sessions.lock().unwrap().len(), 2);
+}
+
+#[test]
+fn early_resume_exit_clears_the_key_only_for_a_confirmed_missing_conversation() {
+    for (conversation, kept, kind) in [
+        (Some(true), true, "resume_exited"),
+        (None, true, "resume_exited"),
+        (Some(false), false, "resume_failed"),
+    ] {
+        let pool = pool_with_schema();
+        let id = ulid::Ulid::new().to_string();
+        let key = uuid::Uuid::new_v4().to_string();
+        let mut row = crate::repo::session::SessionRowDb::new_running(id.clone());
+        row.agent_session_key = Some(key.clone());
+        row.started_at = Some(Utc::now());
+        let started_at = row.started_at.unwrap().to_rfc3339();
+        crate::test_support::insert_session_row(&pool.get().unwrap(), &row).unwrap();
+
+        let fake = fake_runtime();
+        fake.set_status_exit_code(None);
+        let mgr = mgr_with_fake(None, Arc::clone(&fake));
+        let (rt_session, output) = fake
+            .spawn(SpawnSpec {
+                session_id: id.clone(),
+                ..Default::default()
+            })
+            .unwrap();
+        fake.close_spawn(0);
+        let events = capture();
+        let app_data = tempfile::tempdir().unwrap();
+        let mut codex = role("codex", &[]);
+        codex.runtime = "codex".into();
+        mgr.start_forwarder_thread(
+            id.clone(),
+            started_at,
+            None,
+            rt_session,
+            output,
+            Arc::clone(&pool),
+            events.clone(),
+            codex,
+            Some(Box::new(move || conversation)),
+            false,
+            None,
+            app_data.path().to_path_buf(),
+        )
+        .join()
+        .unwrap();
+
+        let row = crate::repo::session::get_row(&pool.get().unwrap(), &id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(row.status, crate::model::SessionStatus::Crashed);
+        assert_eq!(
+            row.agent_session_key.as_deref(),
+            kept.then_some(key.as_str()),
+            "probe {conversation:?}"
+        );
+        let warnings = events.warning.lock().unwrap();
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(warnings[0].kind, kind);
+    }
 }

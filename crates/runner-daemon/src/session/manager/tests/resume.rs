@@ -617,3 +617,69 @@ fn codex_mission_resume_grants_event_log_dir_to_sandbox() {
 // also lived here has been removed — Resume just respawns the
 // PTY with no stdin injection, so the helper that synthesized
 // a FakeRuntime SessionHandle for those tests is gone too.
+
+#[test]
+fn early_codex_resume_exit_keeps_the_conversation_for_the_next_resume() {
+    let pool = pool_with_schema();
+    let role_id = ulid::Ulid::new().to_string();
+    let session_id = ulid::Ulid::new().to_string();
+    let prior_key = uuid::Uuid::new_v4().to_string();
+    let dir = tempfile::tempdir().unwrap();
+    {
+        let conn = pool.get().unwrap();
+        let mut persisted_role = role("/bin/cat", &[]);
+        persisted_role.id = role_id.clone();
+        persisted_role.runtime = "codex".into();
+        crate::repo::role::insert(&conn, &crate::repo::role::RoleRow::from(&persisted_role))
+            .unwrap();
+        let mut row = crate::test_support::test_session_row(
+            &session_id,
+            crate::model::SessionStatus::Stopped,
+        );
+        row.role_id = Some(role_id.clone());
+        row.cwd = Some(dir.path().to_string_lossy().into_owned());
+        row.agent_session_key = Some(prior_key.clone());
+        crate::test_support::insert_session_row(&conn, &row).unwrap();
+    }
+
+    let fake = fake_runtime();
+    fake.set_status_exit_code(Some(1));
+    let mgr = mgr_with_fake(None, Arc::clone(&fake));
+    let cap = capture();
+    for attempt in 0..2 {
+        mgr.resume(
+            &session_id,
+            None,
+            None,
+            dir.path(),
+            Arc::clone(&pool),
+            cap.clone(),
+        )
+        .unwrap();
+        let spec = fake.last_spawn_spec().unwrap();
+        assert_eq!(spec.args[..2], ["resume".to_owned(), prior_key.clone()]);
+        fake.close_spawn(attempt);
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while cap.exit.lock().unwrap().len() <= attempt && Instant::now() < deadline {
+            thread::sleep(Duration::from_millis(5));
+        }
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while mgr
+            .raw_session_state(&session_id)
+            .is_some_and(|state| state.lock().unwrap().handle.is_some())
+            && Instant::now() < deadline
+        {
+            thread::sleep(Duration::from_millis(5));
+        }
+        let row = crate::repo::session::get_row(&pool.get().unwrap(), &session_id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(row.status, crate::model::SessionStatus::Crashed);
+        assert_eq!(row.agent_session_key.as_deref(), Some(prior_key.as_str()));
+    }
+    let warnings = cap.warning.lock().unwrap();
+    assert_eq!(warnings.len(), 2);
+    assert!(warnings
+        .iter()
+        .all(|warning| warning.kind == "resume_exited"));
+}

@@ -285,23 +285,25 @@ impl SessionManager {
                 );
             }
         }
-        let conversation_missing = snap.agent_session_key.as_deref().is_some_and(|key| {
-            if let Some(account) = &claude_account {
-                return crate::claude_accounts::transcript(
-                    &account.origin_folder,
-                    resolved_cwd_for_check.as_deref(),
+        let conversation_exists = {
+            let origin_folder = claude_account
+                .as_ref()
+                .map(|account| account.origin_folder.clone());
+            let cwd = resolved_cwd_for_check.clone();
+            move |key: &str| {
+                super::output::conversation_exists(
+                    adapter,
+                    origin_folder.as_deref(),
+                    cwd.as_deref(),
+                    &probe_env,
                     key,
                 )
-                .is_some_and(|path| !path.is_file());
             }
-            adapter.conversation_exists(
-                key,
-                &crate::runtimes::ProbeContext {
-                    cwd: resolved_cwd_for_check.as_deref(),
-                    role_env: &probe_env,
-                },
-            ) == Some(false)
-        });
+        };
+        let conversation_missing = snap
+            .agent_session_key
+            .as_deref()
+            .is_some_and(|key| conversation_exists(key) == Some(false));
         if conversation_missing && !allow_fresh_fallback && !missing.resume_on_launch {
             return Err(Error::msg(format!(
                 "session {session_id} conversation is unavailable; resume it manually to start fresh"
@@ -714,6 +716,10 @@ impl SessionManager {
             );
         }
 
+        let resume_check = effective_prior_key.filter(|_| plan.resuming).map(|key| {
+            let key = key.to_owned();
+            Box::new(move || conversation_exists(&key)) as super::output::ConversationCheck
+        });
         let forwarder = self.start_forwarder_thread(
             session_id.to_string(),
             started_at,
@@ -723,7 +729,7 @@ impl SessionManager {
             Arc::clone(&pool),
             Arc::clone(&events),
             role.clone(),
-            plan.resuming,
+            resume_check,
             snap.role_id.is_some(),
             resume_emit_ctx,
             app_data_dir.to_path_buf(),
