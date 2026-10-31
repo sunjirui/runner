@@ -6,7 +6,7 @@ Start a chat to work with one agent in its own terminal. You can choose the agen
 
 1. [Install and sign in to an agent](install.md), then open Runner.
 2. Press **⌘N** / **Ctrl+N** to focus the launcher in an empty pane, or open it in a new tab.
-3. Check the folder below **Search agents and roles**. On the default page, choose a project or **No project**; use **Change** to pick another folder. In a split pane, the project stays with its tab and the folder starts from a neighbouring session.
+3. Check the folder. On the default page it sits below **Search agents and roles**: choose a project or **No project**, and use **Change** to pick another folder. A split pane has no folder control: its chat uses the tab’s project and starts in a neighbouring session’s folder. A short split pane shows fewer recent entries; type to find the others.
 4. Type an agent or role name, then press **Enter** or click its row. With the search empty, **1–4** start the corresponding recent entry. Agent rows use the agent’s own configuration; roles use their saved settings. A role’s own directory takes precedence unless you used **Change**.
 5. The chat starts immediately, without a form. Rename it from the pane menu when needed.
 6. In the terminal, send a small prompt such as: “List the top-level files in this folder and explain what each is for. Do not change any files.” Complete any sign-in, trust or approval prompts in the agent's own terminal.

@@ -21,15 +21,15 @@ From the sidebar, a chat with a different agent takes four clicks and a second a
 
 ### Layout
 
-Match `launcher-in-pane.png`, `launcher-default-page.png` and `launcher-typing.png`, using the existing theme tokens. A centred column, 400 px wide in a pane and 440 px on the default page, holds:
+Match `runner/desktop/specs/1092-chat-terminal-launcher.pen`: node `XlBTt` for the default page and `g8HlmM` for a split pane, using the existing theme tokens. A centred column, 400 px wide in a pane and 440 px on the default page, with 8 px gaps in a pane and 12 px on the default page, holds, with no title on either page:
 
-1. On the default page only, the title **Start in {project}**, or **Start** with no project.
-2. A search field, focused when the launcher appears, with the placeholder **Search agents and roles**.
-3. The start location, inline without a box: a folder icon, the path in the mono font and **Change**. In a pane of an existing tab the path follows the existing `terminal_start_location` rule and adds “· same as {neighbouring pane's title}” when it comes from a neighbour; the tab's project stays locked, as today. On the default page the line starts with the project picker (`ProjectField`) followed by the project's path. **Change** opens the existing directory picker: the OS folder picker locally, the host's `FolderPicker` remotely.
-4. A list card: a section label (**Recent**, or **{n} of {total} agents and roles** while searching), up to four ranked rows, a divider, then pinned rows: **Terminal**, and **Mission** on the default page only.
-5. A hint: **1–4 start a recent one while the search is empty**.
+1. A 32 px search field, focused when the launcher appears, with the placeholder **Search agents and roles**.
+2. The start location. On the default page it is a line under the search field, inline without a box: a folder icon, the project picker (`ProjectField`), the project's path in the mono font and **Change**, so the project's name and its folder read together. **Change** opens the existing directory picker: the OS folder picker locally, the host's `FolderPicker` remotely. A split pane has no start location: its chat files with the tab's project, which stays locked as today, and starts in the folder the existing `terminal_start_location` rule gives, normally a neighbouring session's. There is no note naming the neighbouring pane.
+3. A list card with no section label: up to four ranked rows, a divider, then pinned rows: **Terminal**, and **Mission** on the default page only. There is no hint line.
 
-A row has a key badge (1–4 for ranked rows; the effective shortcut for pinned rows, ⌘T and ⇧⌘M by default), a 24 px mark (the runtime mark on a raised tile, the role's `RoleAvatar`, or the terminal or users icon), the name, a detail and, on the selected row, a ↵ glyph. A role's detail is **Role · {runtime}**, followed by the role's model and effort when it sets them. An agent's detail is **Agent**: the PNGs' model and effort on agent rows are illustrative, since a chat started without a form uses the agent's own configuration. Search results also show the last use at the right (**2h ago**, **Yesterday**, a date, or **Never used**).
+A split pane measures itself and drops ranked rows from the bottom, down to one, until the card fits, then drops **Terminal** (⌘T still starts one), then the last row, leaving the search field alone; a pane too short for even that loses the vertical padding. Dragging a divider (15–85 %) or shrinking the window can make a pane shorter than the 160 px a split needs. The 1–4 keys cover only the rows shown; typing still searches every agent and role.
+
+A 30 px row has a key badge (1–4 for ranked rows; the effective shortcut for pinned rows, ⌘T and ⇧⌘M by default, in chips 40 px wide so their marks line up), a 20 px mark (the runtime mark on a raised tile, the role's `RoleAvatar`, or the terminal or users icon), the name, a detail and, on the selected row, a ↵ glyph. A role's detail is **Role · {runtime}**, followed by the role's model and effort when it sets them. An agent's detail is **Agent**: the PNGs' model and effort on agent rows are illustrative, since a chat started without a form uses the agent's own configuration. Search results also show the last use at the right (**2h ago**, **Yesterday**, a date, or **Never used**).
 
 ### Order and search
 
