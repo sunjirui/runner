@@ -402,6 +402,7 @@ struct Capture {
     fork_started: Mutex<Vec<SessionForkStartedEvent>>,
     status: Mutex<Vec<SessionActivityEvent>>,
     activity: Mutex<Vec<RoleActivityEvent>>,
+    warning: Mutex<Vec<WarningEvent>>,
 }
 
 impl SessionEvents for Capture {
@@ -442,6 +443,9 @@ impl SessionEvents for Capture {
     }
     fn role_activity(&self, ev: &RoleActivityEvent) {
         self.activity.lock().unwrap().push(ev.clone());
+    }
+    fn warning(&self, ev: &WarningEvent) {
+        self.warning.lock().unwrap().push(ev.clone());
     }
 }
 

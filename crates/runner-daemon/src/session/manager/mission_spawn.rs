@@ -488,7 +488,7 @@ impl SessionManager {
             Arc::clone(&pool),
             Arc::clone(&events),
             role.clone(),
-            plan.resuming,
+            None,
             true,
             spawn_emit_ctx,
             app_data_dir.clone(),

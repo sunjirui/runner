@@ -434,7 +434,7 @@ impl SessionManager {
             Arc::clone(&pool),
             Arc::clone(&events),
             role.clone(),
-            plan.resuming,
+            None,
             emit_activity,
             None, // direct chats are off-bus — no log to append session_status to
             app_data_dir.to_path_buf(),

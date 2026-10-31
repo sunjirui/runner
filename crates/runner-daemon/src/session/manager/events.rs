@@ -392,11 +392,10 @@ pub struct SessionUpdatedEvent {
 }
 
 /// Non-fatal advisory the UI can render as a banner. Emitted on
-/// `session/warning`. Today the only producer is the resume-fallback path:
-/// when the runtime adapter asked the agent CLI to resume a prior
-/// conversation but the child exited fast and unsuccessfully, we treat that
-/// as a resume failure, wipe the bad key, and tell the user the next spawn
-/// will start fresh.
+/// `session/warning`. When a resumed child exits fast and unsuccessfully,
+/// `resume_failed` says its conversation was confirmed missing and the
+/// next spawn starts fresh; `resume_exited` says the key was kept for a
+/// retry because nothing confirmed the conversation was gone.
 #[derive(Debug, Clone, Serialize)]
 pub struct WarningEvent {
     pub session_id: String,

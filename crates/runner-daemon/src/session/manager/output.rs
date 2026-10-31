@@ -6,6 +6,30 @@ use rusqlite::OptionalExtension;
 
 // Match alacritty's read budget while bounding a single terminal-lock hold.
 const MAX_OUTPUT_BURST: usize = 1024 * 1024;
+const EARLY_RESUME_EXIT: Duration = Duration::from_secs(3);
+
+/// Reports whether a resumed conversation still exists, as the runtime's
+/// conversation probe sees it; `None` when the runtime cannot tell.
+pub(super) type ConversationCheck = Box<dyn FnOnce() -> Option<bool> + Send>;
+
+/// A Claude account chat keeps its transcript in the account's origin
+/// folder; every other chat asks its runtime adapter.
+pub(super) fn conversation_exists(
+    adapter: &dyn crate::runtimes::RuntimeAdapter,
+    account_folder: Option<&str>,
+    cwd: Option<&str>,
+    env: &HashMap<String, String>,
+    key: &str,
+) -> Option<bool> {
+    match account_folder {
+        Some(folder) => {
+            crate::claude_accounts::transcript(folder, cwd, key).map(|path| path.is_file())
+        }
+        None => {
+            adapter.conversation_exists(key, &crate::runtimes::ProbeContext { cwd, role_env: env })
+        }
+    }
+}
 
 pub(crate) fn classify_local_input(bytes: &[u8]) -> Option<LocalInputClass> {
     if bytes.is_empty() {
@@ -74,7 +98,7 @@ impl SessionManager {
         pool: Arc<DbPool>,
         events: Arc<dyn SessionEvents>,
         role: Role,
-        resuming: bool,
+        resume_check: Option<ConversationCheck>,
         emit_activity: bool,
         emit_ctx: Option<ForwarderEmitCtx>,
         app_data_dir: PathBuf,
@@ -325,16 +349,34 @@ impl SessionManager {
 
             let was_killed = manager_t.take_killed(&session_id);
             crate::session::system_prompt::remove(&app_data_dir, &session_id);
-            // Resume failure heuristic: prior conversation rejected
-            // and the agent died fast.
-            let resume_failed = resuming
-                && !success
-                && !was_killed
-                && started_at.elapsed() < std::time::Duration::from_secs(3);
+            let elapsed = started_at.elapsed();
+            let early_resume_exit =
+                resume_check.is_some() && !success && !was_killed && elapsed < EARLY_RESUME_EXIT;
             #[cfg(windows)]
             let mut session_end = manager_t.session_end.exit();
             #[cfg(windows)]
-            let resume_failed = resume_failed && !session_end.preserve_key();
+            let early_resume_exit = early_resume_exit && !session_end.preserve_key();
+            // An early exit alone does not prove the runtime rejected the
+            // conversation, so only a probe that finds it gone drops the key.
+            let conversation = if early_resume_exit {
+                resume_check.and_then(|check| check())
+            } else {
+                None
+            };
+            let resume_failed = early_resume_exit && conversation == Some(false);
+            if early_resume_exit {
+                log::warn!(
+                    "resume of {session_id} ({}) exited after {} ms with exit code {}; conversation {}",
+                    role.runtime,
+                    elapsed.as_millis(),
+                    exit_code.map_or_else(|| "unavailable".to_owned(), |code| code.to_string()),
+                    match conversation {
+                        Some(false) => "missing, clearing its key",
+                        Some(true) => "present, keeping its key",
+                        None => "unverified, keeping its key",
+                    },
+                );
+            }
             let final_status = if success || was_killed {
                 crate::model::SessionStatus::Stopped
             } else {
@@ -409,6 +451,16 @@ impl SessionManager {
                     kind: "resume_failed".into(),
                     message: format!(
                         "Could not resume the previous {} conversation; the next launch will start fresh.",
+                        role.runtime
+                    ),
+                });
+            } else if early_resume_exit {
+                events.warning(&WarningEvent {
+                    session_id: session_id.clone(),
+                    mission_id: mission_id.clone(),
+                    kind: "resume_exited".into(),
+                    message: format!(
+                        "The {} agent exited while resuming its conversation; Resume will try it again.",
                         role.runtime
                     ),
                 });

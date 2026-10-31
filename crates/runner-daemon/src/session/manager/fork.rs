@@ -366,6 +366,28 @@ impl SessionManager {
                     StatusSource::Fork,
                     events.as_ref(),
                 );
+                let resume_check = plan
+                    .assigned_key
+                    .clone()
+                    .filter(|_| plan.resuming)
+                    .map(|key| {
+                        let runtime = role.runtime.clone();
+                        let account_folder = fork_definition
+                            .claude_account
+                            .as_ref()
+                            .map(|account| account.origin_folder.clone());
+                        let cwd = resolved_cwd.clone();
+                        let env = role.env.clone();
+                        Box::new(move || {
+                            super::output::conversation_exists(
+                                crate::runtimes::for_key(&runtime),
+                                account_folder.as_deref(),
+                                cwd.as_deref(),
+                                &env,
+                                &key,
+                            )
+                        }) as super::output::ConversationCheck
+                    });
                 let forwarder = self.start_forwarder_thread(
                     session_id.clone(),
                     started_at,
@@ -375,7 +397,7 @@ impl SessionManager {
                     Arc::clone(&pool),
                     Arc::clone(&events),
                     role.clone(),
-                    plan.resuming,
+                    resume_check,
                     source.role_id.is_some(),
                     None,
                     app_data_dir.to_path_buf(),

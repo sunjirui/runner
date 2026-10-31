@@ -317,12 +317,10 @@ impl RuntimeAdapter for ClaudeCode {
                 // when the conversation file was never persisted) is
                 // normally masked by spawn-time first-turn delivery. An
                 // untouched direct Claude fork intentionally has no first
-                // turn and can still reach this fallback. If a resume fails
-                // (e.g. the user killed the app
-                // within ~1.5s of spawn before the first turn went
-                // through), the reader thread's `resume_failed`
-                // heuristic wipes `agent_session_key` and the next
-                // launch starts fresh.
+                // turn and can still reach this fallback. If a resume exits
+                // early and the transcript is confirmed missing, the
+                // forwarder wipes `agent_session_key` and the next launch
+                // starts fresh.
                 args: vec!["--resume".into(), k.to_string()],
                 prepend: false,
                 assigned_key: Some(k.to_string()),
