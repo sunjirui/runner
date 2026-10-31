@@ -20,9 +20,9 @@ use alacritty_terminal::vte::ansi::{Color, CursorShape, NamedColor, Rgb};
 use gpui::{
     fill, outline, point, px, relative, size, AnyTooltip, AnyView, App, Bounds, ContentMask,
     Context, CursorStyle, DispatchPhase, Element, ElementInputHandler, Entity, FocusHandle, Font,
-    GlobalElementId, Hitbox, HitboxBehavior, Hsla, InspectorElementId, IntoElement, LayoutId,
-    MouseButton as GpuiMouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point,
-    ScrollDelta, ScrollWheelEvent, ShapedLine, SharedString, Style, TextAlign, TextRun,
+    FontFallbacks, GlobalElementId, Hitbox, HitboxBehavior, Hsla, InspectorElementId, IntoElement,
+    LayoutId, MouseButton as GpuiMouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels,
+    Point, ScrollDelta, ScrollWheelEvent, ShapedLine, SharedString, Style, TextAlign, TextRun,
     UnderlineStyle, Window,
 };
 
@@ -656,6 +656,28 @@ fn accumulate_scroll(accumulator: &mut f32, lines: f32) -> i32 {
     whole
 }
 
+/// A one-column cell cannot hold a color emoji, so a non-ASCII glyph is drawn
+/// in text presentation unless U+FE0F asks for emoji (#1064).
+fn wants_text_presentation(c: char, wide: bool, zerowidth: Option<&[char]>) -> bool {
+    !wide && !c.is_ascii() && !zerowidth.is_some_and(|zw| zw.contains(&'\u{fe0f}'))
+}
+
+fn text_presentation_font(base: &Font) -> Font {
+    let symbols = runner_app::platform_fonts::TERMINAL_SYMBOL_FALLBACKS;
+    if symbols.is_empty() {
+        return base.clone();
+    }
+    let mut families = base
+        .fallbacks
+        .as_ref()
+        .map(|fallbacks| fallbacks.fallback_list().to_vec())
+        .unwrap_or_default();
+    families.extend(symbols.iter().map(|family| (*family).to_owned()));
+    let mut font = base.clone();
+    font.fallbacks = Some(FontFallbacks::from_fonts(families));
+    font
+}
+
 pub(crate) fn to_hsla(rgb: Rgb, alpha: f32) -> Hsla {
     let mut rgba = gpui::rgb(((rgb.r as u32) << 16) | ((rgb.g as u32) << 8) | rgb.b as u32);
     rgba.a = alpha;
@@ -890,6 +912,7 @@ impl Element for TerminalElement {
         crate::render_counts::count_render(&format!("terminal:{}", self.session.session_id()), cx);
         let text_system = window.text_system();
         let base_font = self.style.font.clone();
+        let symbol_font = text_presentation_font(&base_font);
         let font_size = px(self.style.font_size);
         let font_id = text_system.resolve_font(&base_font);
         let cell_width = text_system
@@ -1169,7 +1192,12 @@ impl Element for TerminalElement {
                     }
                 }
 
-                let mut cell_font: Font = base_font.clone();
+                let mut cell_font: Font = if wants_text_presentation(cell.c, wide, cell.zerowidth())
+                {
+                    symbol_font.clone()
+                } else {
+                    base_font.clone()
+                };
                 if cell.flags.contains(Flags::BOLD) {
                     cell_font = cell_font.bold();
                 }
@@ -1536,8 +1564,8 @@ mod tests {
 
     use super::{
         accumulate_scroll, autoscroll_amount, cell_and_side, link_modifier, point_for_viewport,
-        viewport_cell, TerminalElement, TerminalGeometry, TerminalInput, TerminalInteraction,
-        TerminalStyle,
+        text_presentation_font, viewport_cell, wants_text_presentation, TerminalElement,
+        TerminalGeometry, TerminalInput, TerminalInteraction, TerminalStyle,
     };
     use alacritty_terminal::term::TermMode;
     use runner_terminal::mappings::encode_scroll;
@@ -1956,6 +1984,43 @@ mod tests {
         assert_eq!(viewport_cell(changed, point(px(195.), px(165.))), (5, 3));
         assert_eq!(viewport_cell(changed, point(px(119.), px(79.))), (0, 0));
         assert_eq!(viewport_cell(changed, point(px(500.), px(500.))), (12, 5));
+    }
+
+    #[test]
+    fn narrow_symbols_use_text_presentation_unless_emoji_is_requested() {
+        assert!(wants_text_presentation('\u{23fa}', false, None));
+        assert!(wants_text_presentation(
+            '\u{23f8}',
+            false,
+            Some(&['\u{fe0e}'])
+        ));
+        assert!(!wants_text_presentation(
+            '\u{23fa}',
+            false,
+            Some(&['\u{fe0f}'])
+        ));
+        assert!(!wants_text_presentation('\u{1f680}', true, None));
+        assert!(!wants_text_presentation('a', false, None));
+    }
+
+    #[test]
+    fn text_presentation_font_adds_the_platform_symbol_fallbacks() {
+        let mut base = gpui::font("JetBrainsMono Nerd Font Mono");
+        base.fallbacks = Some(gpui::FontFallbacks::from_fonts(vec![
+            "Microsoft YaHei".to_owned(),
+            "Segoe UI".to_owned(),
+        ]));
+        let font = text_presentation_font(&base);
+        #[cfg(windows)]
+        {
+            assert_eq!(font.family, base.family);
+            assert_eq!(
+                font.fallbacks.unwrap().fallback_list(),
+                ["Microsoft YaHei", "Segoe UI", "Segoe UI Symbol"]
+            );
+        }
+        #[cfg(not(windows))]
+        assert_eq!(font, base);
     }
 
     #[test]

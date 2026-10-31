@@ -14,3 +14,4 @@ pub const TERMINAL_FONT_FALLBACKS: &[&str] = &[
     "Noto Sans CJK KR",
     "monospace",
 ];
+pub const TERMINAL_SYMBOL_FALLBACKS: &[&str] = &[];
