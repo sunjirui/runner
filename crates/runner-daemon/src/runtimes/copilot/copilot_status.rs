@@ -84,7 +84,7 @@ pub(crate) fn install_plugin(app_data_dir: &Path) -> Result<()> {
                 "type": "command",
                 "command": command,
                 "powershell": crate::runtimes::helpers::hook_report_command(app_data_dir, Runtime::Copilot, event, true),
-                "timeout": 2,
+                "timeout": crate::runtimes::helpers::HOOK_TIMEOUT_SECS,
             }],
         });
         if *event == "Notification" {
@@ -888,7 +888,7 @@ mod tests {
             let entry = &hooks["hooks"][event][0];
             assert_eq!(entry["hooks"].as_array().unwrap().len(), 1);
             assert_eq!(entry["hooks"][0]["type"], "command");
-            assert_eq!(entry["hooks"][0]["timeout"], 2);
+            assert_eq!(entry["hooks"][0]["timeout"], 10);
             assert_eq!(
                 entry["hooks"][0]["command"],
                 crate::runtimes::helpers::hook_report_command(

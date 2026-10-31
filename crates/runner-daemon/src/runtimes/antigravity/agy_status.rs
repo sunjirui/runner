@@ -76,7 +76,7 @@ fn hooks_json(app_data_dir: &Path) -> serde_json::Value {
         let handler = serde_json::json!({
             "type": "command",
             "command": crate::runtimes::helpers::hook_report_command(app_data_dir, Runtime::Antigravity, event, false),
-            "timeout": 2,
+            "timeout": crate::runtimes::helpers::HOOK_TIMEOUT_SECS,
         });
         // Tool events wrap their handlers in a matcher group; the others
         // take a flat list.
@@ -334,7 +334,7 @@ mod tests {
                 &events[*event][0]
             };
             assert_eq!(handler["type"], "command");
-            assert_eq!(handler["timeout"], 2);
+            assert_eq!(handler["timeout"], 10);
             assert_eq!(
                 handler["command"],
                 crate::runtimes::helpers::hook_report_command(

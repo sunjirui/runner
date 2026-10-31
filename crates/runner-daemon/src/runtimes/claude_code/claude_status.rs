@@ -23,7 +23,6 @@ use crate::session::status::{TurnOutcome, WaitReason};
 
 #[cfg(test)]
 use crate::session::status::{Activity, AgentObservation, ObservationSource, WorkDetail};
-pub(crate) const HOOK_TIMEOUT_SECS: u64 = 2;
 
 // Runner-owned per-invocation helper follows cmux's hook bridge shape
 // (manaflow-ai/cmux, GPL-3.0-or-later); the status records are Runner's.

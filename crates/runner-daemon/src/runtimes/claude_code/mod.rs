@@ -83,7 +83,7 @@ pub(crate) fn claude_settings_args(
             "hooks": [{
                 "type": "command",
                 "command": hook_report_command(app_data_dir, Runtime::ClaudeCode, event, false),
-                "timeout": crate::runtimes::claude_code::claude_status::HOOK_TIMEOUT_SECS,
+                "timeout": HOOK_TIMEOUT_SECS,
             }],
         });
         if event == "Notification" {

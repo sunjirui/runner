@@ -316,7 +316,7 @@ fn claude_status_hooks_have_short_timeouts_and_match_verified_notifications() {
     ] {
         let hook = &settings["hooks"][event][0]["hooks"][0];
         assert_eq!(hook["type"], "command", "{event}");
-        assert_eq!(hook["timeout"], 2, "{event}");
+        assert_eq!(hook["timeout"], 10, "{event}");
         assert!(hook["command"].as_str().unwrap().contains(&format!(
             "hook report --runtime claude-code --event {event}"
         )));
