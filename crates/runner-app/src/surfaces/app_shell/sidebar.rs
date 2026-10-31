@@ -192,8 +192,12 @@ impl NativeRoot {
             });
         let search_button = div()
             .id("sidebar-search")
+            .debug_selector(|| "SIDEBAR_SEARCH".into())
             .group("sidebar-search")
             .tab_index(0)
+            // A click leaves keyboard focus where it was, so dismissing the palette returns
+            // there instead of to this button.
+            .capture_any_mouse_down(|_, window, _| window.prevent_default())
             .flex_none()
             .size(px(24. * self.settings(cx).app_zoom))
             .flex()

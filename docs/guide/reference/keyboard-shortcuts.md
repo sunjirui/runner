@@ -50,7 +50,7 @@ On Windows and Linux, **Ctrl+C** copies when terminal text is selected; otherwis
 | --- | --- | --- |
 | Start a mission or add a role in its dialog | ⌘Enter | Ctrl+Enter |
 
-The dialog confirmation binding is fixed. In the launcher, ↑/↓ select rows, Enter starts the selected row, 1–4 start ranked rows while search is empty, and Esc clears a non-empty search. Digits type normally during a search.
+The dialog confirmation binding is fixed. In the launcher, ↑/↓ select rows, Enter starts the selected row, 1–4 start ranked rows while search is empty, and Esc clears a non-empty search. Digits type normally during a search. The command palette shortcut also works from the launcher's search field, unlike other text fields; closing the palette returns to the search.
 
 ## Appearance and window controls
 

@@ -291,13 +291,7 @@ impl ChatLauncher {
             this.selected = 0;
             cx.notify();
         });
-        if root.front_page_is_chat()
-            && !root.create_modal_open()
-            && pane.as_ref().is_none_or(|pane| {
-                root.front_page_layout()
-                    .is_some_and(|layout| layout.focused_pane_id == pane.pane_id)
-            })
-        {
+        if claims_focus(root, pane.as_ref()) {
             query.read(cx).focus_handle().focus(window, cx);
         }
         let app_data_dir = root.app_store.read(cx).app_data_dir.clone();
@@ -681,6 +675,15 @@ impl ChatLauncher {
     }
 }
 
+fn claims_focus(root: &NativeRoot, pane: Option<&PaneKey>) -> bool {
+    root.front_page_is_chat()
+        && !root.create_modal_open()
+        && pane.is_none_or(|pane| {
+            root.front_page_layout()
+                .is_some_and(|layout| layout.focused_pane_id == pane.pane_id)
+        })
+}
+
 fn highlighted(name: &str, query: &str) -> AnyElement {
     let query = query.to_lowercase();
     let mut text = div()
@@ -736,7 +739,20 @@ fn last_use(timestamp: Option<i64>) -> String {
 }
 
 impl Render for ChatLauncher {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // Opening a tab or closing a dialog parks focus on the window or tab, where the
+        // launcher's keys never arrive.
+        let reclaim = self.pending.is_none()
+            && self.root.upgrade().is_some_and(|root| {
+                let root = root.read(cx);
+                window
+                    .focused(cx)
+                    .is_none_or(|focus| focus == root.root_focus || focus == root.chat_focus)
+                    && claims_focus(root, self.pane.as_ref())
+            });
+        if reclaim {
+            self.focus(window, cx);
+        }
         let (rows, total, matching) = self.rows(cx);
         let query = self.query.read(cx).text().to_owned();
         self.selected = self.selected.min(rows.len().saturating_sub(1));
@@ -855,6 +871,9 @@ impl Render for ChatLauncher {
                         div()
                             .debug_selector(move || format!("LAUNCHER_BADGE:{index}"))
                             .flex_none()
+                            .flex()
+                            .items_center()
+                            .justify_center()
                             .min_w(rems(18. / 16.))
                             .px(rems(4. / 16.))
                             .py(rems(2. / 16.))
@@ -971,6 +990,7 @@ impl Render for ChatLauncher {
                         div()
                             .h(rems(38. / 16.))
                             .debug_selector(|| "LAUNCHER_SEARCH".into())
+                            .key_context("LauncherSearch")
                             .on_mouse_down(
                                 MouseButton::Left,
                                 cx.listener(|this, _, window, cx| {
@@ -1718,6 +1738,17 @@ impl NativeRoot {
 
 #[cfg(test)]
 impl NativeRoot {
+    pub(crate) fn launcher_search_focused(&self, window: &Window, cx: &App) -> bool {
+        self.launchers.values().any(|launcher| {
+            launcher
+                .read(cx)
+                .query
+                .read(cx)
+                .focus_handle()
+                .is_focused(window)
+        })
+    }
+
     pub(crate) fn open_pane_chat_modal(
         &mut self,
         pane_id: &str,
@@ -2314,6 +2345,117 @@ mod tests {
             assert!(launcher.pending.is_none());
             assert_eq!(launcher.selected, 0);
         });
+    }
+
+    #[test]
+    fn launcher_takes_focus_back_from_the_window_and_tab_so_arrows_move_the_selection() {
+        for tab in [false, true] {
+            let mut harness =
+                modal_harness(1200., 1000., Vec::new(), Vec::new(), ChatMode::Runtime);
+            let mut launcher = None;
+            harness.act(|root, window, cx| {
+                root.start_chat_modal = None;
+                root.set_route(AppRoute::Chat, cx);
+                if tab {
+                    root.open_new_tab_modal(&NewTab, window, cx);
+                }
+                let pane = root
+                    .front_page_layout()
+                    .map(|layout| PaneKey::new(&layout.id, &layout.focused_pane_id));
+                let view = root.render_launcher(pane, true, window, cx);
+                view.update(cx, |launcher, _| {
+                    launcher.runtimes = vec![agent()];
+                    launcher.roles = vec![role()];
+                });
+                if tab {
+                    root.chat_focus.focus(window, cx);
+                } else {
+                    root.root_focus.focus(window, cx);
+                }
+                launcher = Some(view);
+            });
+            harness.visual.run_until_parked();
+            for (keys, expected) in [("down", 1), ("down", 2), ("up up", 0), ("up", usize::MAX)] {
+                harness.visual.simulate_keystrokes(keys);
+                harness.visual.run_until_parked();
+                harness.act(|_, _, cx| {
+                    let launcher = launcher.as_ref().unwrap().read(cx);
+                    assert_eq!(
+                        launcher.selected,
+                        expected.min(launcher.rows(cx).0.len() - 1),
+                        "after {keys} with the {} focused",
+                        if tab { "tab" } else { "window" }
+                    )
+                });
+            }
+        }
+    }
+
+    #[test]
+    fn clicking_the_sidebar_search_keeps_launcher_keys_after_the_palette_closes() {
+        let mut harness = modal_harness(1200., 1000., Vec::new(), Vec::new(), ChatMode::Runtime);
+        let mut launcher = None;
+        harness.act(|root, window, cx| {
+            root.start_chat_modal = None;
+            root.set_route(AppRoute::Chat, cx);
+            root.open_new_tab_modal(&NewTab, window, cx);
+            let layout = root.front_page_layout().unwrap().clone();
+            let pane = PaneKey::new(&layout.id, &layout.focused_pane_id);
+            let view = root.render_launcher(Some(pane), true, window, cx);
+            view.update(cx, |launcher, cx| {
+                launcher.runtimes = vec![agent()];
+                launcher.roles = vec![role()];
+                launcher.focus(window, cx);
+            });
+            launcher = Some(view);
+        });
+        harness.visual.run_until_parked();
+        let search = harness.visual.debug_bounds("SIDEBAR_SEARCH").unwrap();
+        harness
+            .visual
+            .simulate_click(search.center(), gpui::Modifiers::default());
+        harness.visual.run_until_parked();
+        harness.visual.simulate_keystrokes("escape");
+        harness.visual.run_until_parked();
+        harness.visual.simulate_keystrokes("down");
+        harness.visual.run_until_parked();
+        harness.act(|_, window, cx| {
+            let launcher = launcher.as_ref().unwrap().read(cx);
+            assert!(launcher.query.read(cx).focus_handle().is_focused(window));
+            assert_eq!(launcher.selected, 1);
+        });
+    }
+
+    #[test]
+    fn command_palette_opens_from_the_launcher_search_and_returns_to_it() {
+        let mut harness = modal_harness(1200., 1000., Vec::new(), Vec::new(), ChatMode::Runtime);
+        let mut launcher = None;
+        harness.act(|root, window, cx| {
+            root.start_chat_modal = None;
+            root.set_route(AppRoute::Chat, cx);
+            root.open_new_tab_modal(&NewTab, window, cx);
+            let layout = root.front_page_layout().unwrap().clone();
+            let pane = PaneKey::new(&layout.id, &layout.focused_pane_id);
+            let view = root.render_launcher(Some(pane), true, window, cx);
+            view.update(cx, |launcher, cx| launcher.focus(window, cx));
+            launcher = Some(view);
+        });
+        harness.visual.run_until_parked();
+        for (keys, focused) in [
+            (keymap::platform_default("cmd-k"), false),
+            ("escape".to_owned(), true),
+        ] {
+            harness.visual.simulate_keystrokes(&keys);
+            harness.visual.run_until_parked();
+            harness.act(|_, window, cx| {
+                let launcher = launcher.as_ref().unwrap().read(cx);
+                assert_eq!(
+                    launcher.query.read(cx).focus_handle().is_focused(window),
+                    focused,
+                    "after {keys}"
+                );
+            });
+        }
     }
 
     #[test]
