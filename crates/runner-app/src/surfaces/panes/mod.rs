@@ -16,10 +16,7 @@ use super::*;
 
 use crate::*;
 
-use gpui::{
-    canvas, linear_color_stop, linear_gradient, quad, svg, BorderStyle, Div, FontWeight, Pixels,
-    Point, Size,
-};
+use gpui::{canvas, quad, svg, BorderStyle, Div, FontWeight, Pixels, Point, Size};
 
 use runner_app::ui::resize::{resize_strip, ResizeAxis};
 
@@ -266,10 +263,7 @@ fn pane_body_opacity(grouped: bool, focused: bool) -> f32 {
 }
 
 fn pane_identity_icon(runtime: Option<&str>) -> ChatIcon {
-    runtime.map_or_else(
-        || ChatIcon::generic("square-dashed.svg"),
-        ChatIcon::for_runtime,
-    )
+    runtime.map_or_else(|| ChatIcon::generic("plus.svg"), ChatIcon::for_runtime)
 }
 
 fn starting_overlay_label(runtime: &str, fork_materializing: bool) -> Option<&'static str> {
@@ -572,7 +566,7 @@ mod tests {
     }
 
     #[test]
-    fn dragging_an_empty_pane_mark_preserves_its_id_and_sibling_chat() {
+    fn dragging_an_empty_pane_grip_preserves_its_id_and_sibling_chat() {
         use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext};
         let _theme = crate::theme_snapshot::ThemeGuard::new();
         let temp = tempfile::tempdir().unwrap();
@@ -616,10 +610,75 @@ mod tests {
         let mut visual = VisualTestContext::from_window(window.into(), &cx);
         visual.simulate_resize(size(px(1600.), px(900.)));
         visual.run_until_parked();
-        let mark = visual.debug_bounds("PANE_DRAG_MARK:p3").unwrap();
+        #[cfg(target_os = "macos")]
+        {
+            let margin = visual.debug_bounds("WINDOW_TOP_MARGIN_DRAG").unwrap();
+            let islands = visual.debug_bounds("APP_CONTENT_COLUMN").unwrap();
+            let at = point(islands.center().x, px(4.));
+            assert!(margin.contains(&at));
+            crate::platform_ui::take_titlebar_actions();
+            visual.simulate_mouse_down(at, MouseButton::Left, Modifiers::default());
+            assert_eq!(
+                crate::platform_ui::take_titlebar_actions(),
+                [crate::platform_ui::TitlebarAction::Move]
+            );
+            visual.simulate_mouse_up(at, MouseButton::Left, Modifiers::default());
+            visual.run_until_parked();
+        }
+        #[cfg(target_os = "macos")]
+        {
+            let label = window
+                .read_with(&visual, |root, cx| {
+                    root.front_page_session("direct-agent", cx)
+                        .unwrap()
+                        .label(None)
+                })
+                .unwrap();
+            let title = visual
+                .debug_bounds(Box::leak(format!("PANE_TITLE:{label}").into_boxed_str()))
+                .unwrap();
+            crate::platform_ui::take_titlebar_actions();
+            visual.simulate_event(gpui::MouseDownEvent {
+                position: title.center(),
+                button: MouseButton::Left,
+                modifiers: Modifiers::default(),
+                click_count: 2,
+                first_mouse: false,
+            });
+            assert!(
+                crate::platform_ui::take_titlebar_actions().is_empty(),
+                "title rename must not request a window move or zoom"
+            );
+            visual.simulate_event(gpui::MouseUpEvent {
+                position: title.center(),
+                button: MouseButton::Left,
+                modifiers: Modifiers::default(),
+                click_count: 2,
+            });
+            visual.run_until_parked();
+            window
+                .update(&mut visual, |root, _, cx| {
+                    assert!(root.pane_rename.is_some());
+                    root.pane_rename = None;
+                    cx.notify();
+                })
+                .unwrap();
+            visual.run_until_parked();
+        }
+        let mark = visual.debug_bounds("PANE_DRAG_GRIP:p3").unwrap();
         let target = visual.debug_bounds("PANE_ISLAND:p1").unwrap();
         let destination = point(target.center().x, target.top() + px(10.));
+        #[cfg(target_os = "macos")]
+        crate::platform_ui::take_titlebar_actions();
         visual.simulate_mouse_down(mark.center(), MouseButton::Left, Modifiers::default());
+        #[cfg(target_os = "macos")]
+        assert!(
+            crate::platform_ui::take_titlebar_actions().is_empty(),
+            "pane grip does not request native window movement"
+        );
+        window
+            .read_with(&visual, |root, _| assert!(!root.titlebar_drag_armed))
+            .unwrap();
         visual.simulate_mouse_move(
             mark.center() + point(px(12.), px(12.)),
             Some(MouseButton::Left),
@@ -645,6 +704,65 @@ mod tests {
                 assert_eq!(layout.focused_pane_id, "p3");
             })
             .unwrap();
+    }
+
+    #[test]
+    fn split_header_keeps_its_grip_and_actions_within_narrow_zoomed_panes() {
+        let _theme = crate::theme_snapshot::ThemeGuard::new();
+        let temp = tempfile::tempdir().unwrap();
+        let mut cx = gpui::TestAppContext::single();
+        let store = crate::app_store::test_lifecycle_store(&mut cx, temp.path());
+        store.update(&mut cx, |store, cx| {
+            crate::app_store::seed_mixed_working_sessions(store);
+            let conn = store.test_core.db.get().unwrap();
+            conn.execute("UPDATE sessions SET status='stopped', agent_runtime='claude-code', agent_command='claude', title='Claude Code' WHERE id='direct-agent'", []).unwrap();
+            let mut layout = PaneLayout::single(Some("direct-agent"), &[]);
+            layout.split("p1", SplitOrientation::Row).unwrap();
+            runner_daemon::repo::node::create_tab(&conn, None, "", 0, &layout.serialize().unwrap()).unwrap();
+            drop(conn);
+            store.refresh(crate::app_store::StoreRefreshKind::All, cx);
+        });
+        let window = cx.add_window(|window, cx| {
+            let mut root = crate::NativeRoot::new(
+                "split-grip-budget".into(),
+                temp.path().join("logs"),
+                None,
+                None,
+                store.clone(),
+                window,
+                cx,
+            );
+            root.tabs.activate_session("direct-agent");
+            root.route = crate::AppRoute::Chat;
+            root
+        });
+        let mut visual = gpui::VisualTestContext::from_window(window.into(), &cx);
+        let chrome_width = store.read_with(&cx, |store, _| {
+            store.settings.sidebar_width + store.settings.chat_panel_width + 26.
+        });
+        for zoom in [1., 1.3] {
+            window
+                .update(&mut visual, |root, window, cx| {
+                    root.set_zoom(zoom, window, cx)
+                })
+                .unwrap();
+            for width in [240., 360.] {
+                visual.simulate_resize(size(
+                    px((2. * width + chrome_width) * zoom),
+                    px(800. * zoom),
+                ));
+                visual.run_until_parked();
+                let header = visual.debug_bounds("PANE_HEADER:direct-agent").unwrap();
+                let grip = visual.debug_bounds("PANE_DRAG_GRIP:p1").unwrap();
+                let mark = visual.debug_bounds("PANE_RUNTIME_MARK:p1").unwrap();
+                let resume = visual.debug_bounds("PANE_LIFECYCLE:Resume chat").unwrap();
+                assert!((grip.size.width - px(14. * zoom)).abs() < px(1.));
+                assert!((grip.left() - header.left() - px(8. * zoom)).abs() < px(1.));
+                assert!((mark.left() - grip.right() - px(4. * zoom)).abs() < px(1.));
+                assert!(grip.left() >= header.left() && resume.right() <= header.right());
+                assert!(mark.right() < resume.left());
+            }
+        }
     }
 
     #[test]
@@ -1534,7 +1652,7 @@ mod tests {
         );
         assert!(!side_panel_open(true, true));
 
-        assert_eq!(pane_identity_icon(None).asset_path(), "square-dashed.svg");
+        assert_eq!(pane_identity_icon(None).asset_path(), "plus.svg");
         assert_eq!(pane_close_behavior(None), PaneCloseBehavior::LayoutOnly);
     }
 
@@ -1778,6 +1896,11 @@ mod tests {
             visual.simulate_resize(size(px(1440.), px(900.)));
             visual.run_until_parked();
             assert_eq!(
+                visual.debug_bounds("PANE_DRAG_GRIP:p1").is_some(),
+                variant == "split-empty",
+                "{variant}"
+            );
+            assert_eq!(
                 visual.debug_bounds("START_SURFACE").is_some(),
                 variant.starts_with("no-tab") || variant.starts_with("single-empty"),
                 "{variant}"
@@ -1808,7 +1931,7 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn start_surface_column_stays_480_pixels_wide_and_centred() {
+    fn start_surface_column_stays_440_pixels_wide_and_centred() {
         use crate::{AppRoute, NativeRoot};
         use gpui::{TestAppContext, VisualTestContext};
         use runner_app::pane_layout::TabSet;
@@ -1837,7 +1960,7 @@ mod tests {
             visual.run_until_parked();
             let surface = visual.debug_bounds("START_SURFACE").unwrap();
             let column = visual.debug_bounds("START_SURFACE_COLUMN").unwrap();
-            assert_eq!(column.size.width, px(480.), "window width {width}");
+            assert_eq!(column.size.width, px(440.), "window width {width}");
             assert_eq!(
                 column.center().x,
                 surface.center().x,

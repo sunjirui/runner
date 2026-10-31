@@ -423,48 +423,7 @@ impl MissionWorkspace {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.presentation.is_remote() {
-            if !self.remote_supports(&["close"]) {
-                return;
-            }
-            if let Some(shell) = self.shell.upgrade() {
-                let session_id = session_id.to_owned();
-                shell.update(cx, |shell, cx| {
-                    TerminalCloseConfirm::open(
-                        &mut shell.terminal_close_confirm,
-                        TerminalCloseTarget::MissionDrawer { session_id },
-                        window,
-                        cx,
-                    );
-                    cx.notify();
-                });
-            }
-            return;
-        }
-        match self
-            .core(cx)
-            .session_shell_has_foreground_process(session_id)
-        {
-            Ok(true) => {
-                if let Some(shell) = self.shell.upgrade() {
-                    let session_id = session_id.to_owned();
-                    shell.update(cx, |shell, shell_cx| {
-                        TerminalCloseConfirm::open(
-                            &mut shell.terminal_close_confirm,
-                            TerminalCloseTarget::MissionDrawer { session_id },
-                            window,
-                            shell_cx,
-                        );
-                        shell_cx.notify();
-                    });
-                }
-            }
-            Ok(false) => self.close_terminal_drawer_shell(session_id, window, cx),
-            Err(error) => {
-                self.error = Some(error.to_string().into());
-                cx.notify();
-            }
-        }
+        self.close_terminal_drawer_shell(session_id, window, cx);
     }
 
     pub(super) fn resize_terminal_drawer(

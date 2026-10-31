@@ -39,6 +39,14 @@ pub(crate) fn sidebar_nodes(overview: &Overview) -> Vec<SidebarNode> {
 }
 
 impl RemoteClient {
+    pub(crate) fn session_tab_layout(&self, session: &str) -> Option<&PaneLayout> {
+        self.workspace
+            .as_ref()?
+            .layouts
+            .values()
+            .find(|layout| layout.contains_session(session))
+    }
+
     pub(crate) fn layout(&self) -> Option<&PaneLayout> {
         let remote = self.workspace.as_ref()?;
         let Some(Item::Tab(id)) = &remote.active else {

@@ -706,9 +706,8 @@ fn remote_mission_shell_retry_keeps_successful_start_and_waits_for_drawer_push()
         })
     });
     window
-        .update(&mut visual, |root, window, cx| {
-            assert!(root.terminal_close_confirm.is_some());
-            root.confirm_terminal_close(window, cx);
+        .update(&mut visual, |root, _, _| {
+            assert!(root.terminal_close_confirm.is_none());
         })
         .unwrap();
     visual.run_until_parked();

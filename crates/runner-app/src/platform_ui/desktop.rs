@@ -74,6 +74,13 @@ pub(crate) fn navigation_left(_window: &Window, zoom: f32) -> f32 {
     16. * zoom
 }
 
+pub(crate) fn titlebar_mouse_down(
+    _event: &gpui::MouseDownEvent,
+    _window: &mut Window,
+    _cx: &mut App,
+) {
+}
+
 impl NativeRoot {
     pub(crate) fn decorate_window(
         &self,
@@ -100,6 +107,13 @@ impl NativeRoot {
         #[cfg(target_os = "linux")]
         let frame = super::linux::resize_frame(frame, window);
         frame
+    }
+
+    pub(crate) fn render_window_top_margin_drag_area(
+        &self,
+        _cx: &mut Context<Self>,
+    ) -> Option<AnyElement> {
+        None
     }
 
     pub(crate) fn render_main_titlebar_drag_area(

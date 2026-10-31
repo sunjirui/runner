@@ -134,10 +134,6 @@ impl ProjectField {
         self.select.read(cx).focus_handle()
     }
 
-    pub(crate) fn locked(&self) -> bool {
-        self.locked
-    }
-
     pub(crate) fn scope(&self) -> ProjectScope {
         ProjectScope::or_root(self.chosen.clone())
     }
@@ -221,6 +217,9 @@ impl ProjectField {
 
     /// A remote computer's projects arrive after the dialog opens.
     pub(crate) fn set_choices(&mut self, choices: Vec<ProjectChoice>, cx: &mut App) {
+        if self.choices == choices {
+            return;
+        }
         if self
             .chosen
             .as_ref()

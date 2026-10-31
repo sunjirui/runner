@@ -13,7 +13,7 @@ In macOS terminal panes, **Settings → Terminal → Option as Meta key** defaul
 | Action | macOS | Windows / Linux |
 | --- | --- | --- |
 | New window | ⇧⌘N | Ctrl+Shift+N |
-| New chat; fill the focused empty pane or create a tab | ⌘N | Ctrl+N |
+| Open/focus the chat launcher in an empty pane or new tab | ⌘N | Ctrl+N |
 | New terminal; fill the focused empty pane or create a tab | ⌘T | Ctrl+Shift+T |
 | New mission | ⇧⌘M | Ctrl+Shift+M |
 | Command palette | ⌘K | Ctrl+K |
@@ -48,11 +48,9 @@ On Windows and Linux, **Ctrl+C** copies when terminal text is selected; otherwis
 
 | Action | macOS | Windows / Linux |
 | --- | --- | --- |
-| Start the chat or mission in its launch dialog | ⌘Enter | Ctrl+Enter |
-| Select Direct mode in Start a chat | ⌘1 | Ctrl+1 |
-| Select Role mode in Start a chat | ⌘2 | Ctrl+2 |
+| Start a mission or add a role in its dialog | ⌘Enter | Ctrl+Enter |
 
-These dialog shortcuts take precedence over tab selection while the launch dialog is open. They are fixed bindings.
+The dialog confirmation binding is fixed. In the launcher, ↑/↓ select rows, Enter starts the selected row, 1–4 start ranked rows while search is empty, and Esc clears a non-empty search. Digits type normally during a search.
 
 ## Appearance and window controls
 

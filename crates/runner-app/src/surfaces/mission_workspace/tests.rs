@@ -703,6 +703,33 @@ fn sidebar_and_mission_fills_follow_carbon_and_runner_light() {
         assert_fill(&mut visual, "APP_SIDEBAR", colors.sidebar);
         assert_fill(&mut visual, "MISSION_PANEL", None);
         assert_fill(&mut visual, "MISSION_HEADER_ROW", None);
+        #[cfg(target_os = "macos")]
+        {
+            let header = visual.debug_bounds("MISSION_HEADER_ROW").unwrap();
+            crate::platform_ui::take_titlebar_actions();
+            visual.simulate_mouse_down(
+                header.center(),
+                gpui::MouseButton::Left,
+                gpui::Modifiers::default(),
+            );
+            assert_eq!(
+                crate::platform_ui::take_titlebar_actions(),
+                [crate::platform_ui::TitlebarAction::Move]
+            );
+            visual.simulate_mouse_move(
+                header.center() + gpui::point(px(4.), px(0.)),
+                Some(gpui::MouseButton::Left),
+                gpui::Modifiers::default(),
+            );
+            assert!(crate::platform_ui::take_titlebar_actions().is_empty());
+            visual.simulate_mouse_up(
+                header.center(),
+                gpui::MouseButton::Left,
+                gpui::Modifiers::default(),
+            );
+            visual.run_until_parked();
+        }
+
         assert_fill(&mut visual, "MISSION_RAIL_HEADER", None);
         assert_fill(&mut visual, "MISSION_TABS", None);
         assert_fill(&mut visual, "MISSION_ACCENT", colors.accent);

@@ -7,14 +7,13 @@ mod close;
 mod layout;
 
 use super::*;
+use runner_core::protocol::project::ProjectScope;
 
 use crate::surfaces::front_page::actions::WorkspaceAction;
 
 use crate::*;
 
 use runner_core::protocol::model::Runtime;
-
-use runner_core::protocol::project::ProjectScope;
 
 pub(super) fn tab_is_terminal(
     layout: &PaneLayout,
@@ -1092,5 +1091,84 @@ mod tests {
             Some("chat-1")
         );
         assert!(forks.is_empty());
+    }
+}
+
+#[cfg(test)]
+mod terminal_close_tests {
+    use super::*;
+    use crate::surfaces::start_chat::{tests::modal_harness, ChatMode};
+    use runner_core::protocol::{ClientError, EventSubscription, Request, Response, Transport};
+    use std::sync::Arc;
+
+    struct NoForegroundProbe(runner_daemon::daemon::InProcessTransport);
+    impl Transport for NoForegroundProbe {
+        fn call(&self, request: Request) -> Result<Response, ClientError> {
+            assert!(
+                !matches!(
+                    request,
+                    Request::session_shell_has_foreground_process { .. }
+                ),
+                "terminal close must not query foreground work or ask for confirmation"
+            );
+            self.0.call(request)
+        }
+        fn subscribe(&self) -> Box<dyn EventSubscription> {
+            self.0.subscribe()
+        }
+    }
+
+    #[test]
+    fn terminal_pane_and_sidebar_tab_close_without_a_probe_or_dialog_while_chat_archive_still_asks()
+    {
+        for entry in ["pane", "shortcut", "sidebar"] {
+            let mut harness =
+                modal_harness(1400., 1000., Vec::new(), Vec::new(), ChatMode::Runtime);
+            harness.act(|root, _, cx| {
+                root.start_chat_modal = None;
+                let core = root.app_store.read(cx).test_core.clone();
+                let conn = core.db.get().unwrap();
+                conn.execute("INSERT INTO sessions(id,status,agent_runtime,agent_command) VALUES ('close-shell','stopped','shell','/bin/sh'),('kept-chat','running','codex','codex')", []).unwrap();
+                drop(conn);
+                root.app_store.update(cx, |store, _| store.client = runner_core::protocol::DaemonClient::new(Arc::new(NoForegroundProbe(runner_daemon::daemon::InProcessTransport(core)))));
+                let mut layout = PaneLayout::single(Some("close-shell"), &[]);
+                layout.id = "01ARZ3NDEKTSV4RRFFQ69G5FAV".into();
+                if entry == "pane" {
+                    let second = layout.split("p1", SplitOrientation::Row).unwrap();
+                    layout.assign_session(&second, "kept-chat").unwrap();
+                    layout.focus_pane("p1");
+                }
+                root.core(cx).node_tab_upsert(layout.upsert_input().unwrap()).unwrap();
+                root.refresh_sessions(cx);
+                root.reload_tabs(cx).unwrap();
+                root.tabs.activate(&layout.id);
+                root.set_route(AppRoute::Chat, cx);
+            });
+            harness.act(|root, window, cx| {
+                let tab = root.tabs.active().unwrap().id.clone();
+                if entry == "pane" {
+                    root.request_close_terminal_pane("p1", "close-shell", window, cx);
+                } else if entry == "shortcut" {
+                    crate::surfaces::windowing::close_tab(root, window, cx);
+                } else {
+                    root.request_close_terminal_tab(&tab, "close-shell", window, cx);
+                }
+                assert!(root.terminal_close_confirm.is_none());
+            });
+            harness.act(|root, window, cx| {
+                assert!(root.session_entry("close-shell", cx).is_none());
+                assert!(root.terminal_close_confirm.is_none());
+                if entry == "pane" {
+                    let pane = root.tabs.active().unwrap().focused_pane_id.clone();
+                    root.request_close_chat_pane(&pane, "kept-chat", window, cx);
+                    assert!(matches!(
+                        root.terminal_close_confirm
+                            .as_ref()
+                            .map(|confirm| &confirm.target),
+                        Some(TerminalCloseTarget::ArchiveChatPane { .. })
+                    ));
+                }
+            });
+        }
     }
 }

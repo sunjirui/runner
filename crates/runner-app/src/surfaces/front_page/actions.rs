@@ -326,6 +326,9 @@ impl NativeRoot {
         activate: bool,
         cx: &mut Context<Self>,
     ) -> Result<()> {
+        if self.launcher_tab_pending(&draft.id, cx) {
+            anyhow::bail!("A start is pending in this tab.");
+        }
         let remote_target = self.front_page_client(cx).is_remote();
         let action = if remote_target {
             self.remote_client.prepare_layout(&draft, cx)
@@ -682,6 +685,9 @@ impl NativeRoot {
         let Some(layout) = self.front_page_layout().cloned() else {
             return;
         };
+        if self.launcher_tab_pending(&layout.id, cx) {
+            return;
+        }
         if layout.drawer_open() && self.drawer_focus.contains_focused(window, cx) {
             self.hide_terminal_drawer(window, cx);
             return;
@@ -700,6 +706,14 @@ impl NativeRoot {
                 }
                 None => self.close_pane(&pane, window, cx),
             }
+        } else if let Some(session) = layout
+            .focused_session_id()
+            .and_then(|id| self.front_page_session(id, cx))
+            .filter(|session| {
+                session.agent_runtime == "shell" && layout.all_session_ids().len() == 1
+            })
+        {
+            self.request_close_terminal_tab(&layout.id, &session.session_id, window, cx);
         } else if !layout.all_session_ids().is_empty() {
             self.request_archive_all(
                 Some(&layout.id),

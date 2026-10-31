@@ -289,6 +289,9 @@ impl NativeRoot {
     }
 
     pub(crate) fn focus_active_terminal(&self, window: &mut Window, cx: &mut App) {
+        if self.focus_visible_launcher(window, cx) {
+            return;
+        }
         if self.remote_client.is_active() {
             if let Some(id) = self
                 .front_page_layout()

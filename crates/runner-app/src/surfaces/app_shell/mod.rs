@@ -255,6 +255,7 @@ impl NativeRoot {
                     .then_some(chrome),
             )
             .children(settings)
+            .children(self.render_window_top_margin_drag_area(cx))
             .children(self.render_window_navigation(window, cx))
             .children(modal)
             .children(mission_modal)
@@ -401,11 +402,12 @@ impl NativeRoot {
             )
             .on_mouse_down(
                 MouseButton::Left,
-                cx.listener(|this, _, _, _| {
+                cx.listener(|this, event, window, cx| {
                     this.titlebar_drag_armed = true;
+                    platform_ui::titlebar_mouse_down(event, window, cx);
                 }),
             );
-        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        #[cfg(target_os = "linux")]
         let area = area
             .on_mouse_move(cx.listener(|this, _, window, _| {
                 if this.titlebar_drag_armed {

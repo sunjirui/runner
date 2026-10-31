@@ -266,6 +266,7 @@ impl NativeRoot {
             chat_focus,
             drawer_focus,
             sidebar,
+            launchers: HashMap::new(),
             start_chat_modal: None,
             start_mission_modal: None,
             project_modal: None,

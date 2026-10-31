@@ -314,7 +314,7 @@ impl Render for Sidebar {
     }
 }
 
-fn node_project_id<N: Clone + Into<NodeRow>, M: Clone + Into<NodeRow>>(
+pub(crate) fn node_project_id<N: Clone + Into<NodeRow>, M: Clone + Into<NodeRow>>(
     nodes: &[N],
     node: &M,
 ) -> Option<String> {

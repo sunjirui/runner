@@ -4068,287 +4068,6 @@ pub(crate) fn action_trace(fake: &Fake, kind: &str) -> Vec<serde_json::Value> {
 }
 
 #[test]
-fn remote_chat_project_menu_and_directory_submit_host_membership_or_explicit_root() {
-    let _theme = crate::theme_snapshot::ThemeGuard::new();
-    for action in ["project", "root", "directory", "browse"] {
-        let temp = tempfile::tempdir().unwrap();
-        let mut cx = TestAppContext::single();
-        let (store, fake, _) = fixture(&mut cx, temp.path());
-        enable_front_page(&fake);
-        let window = add_window(&mut cx, &store, temp.path(), "project-field");
-        window
-            .update(&mut cx, |root, window, cx| {
-                root.choose_computer(computers()[1].clone(), false, window, cx);
-            })
-            .unwrap();
-        cx.run_until_parked();
-        window
-            .update(&mut cx, |root, window, cx| {
-                root.open_sidebar_chat_modal(
-                    runner_core::protocol::project::ProjectScope::Root,
-                    window,
-                    cx,
-                );
-            })
-            .unwrap();
-        cx.run_until_parked();
-        fake.local_requests.lock().unwrap().clear();
-        let mut visual = VisualTestContext::from_window(window.into(), &cx);
-        window
-            .update(&mut visual, |root, window, cx| {
-                let form = root.start_chat_modal.as_ref().unwrap();
-                assert_eq!(
-                    form.test_project().scope(),
-                    runner_core::protocol::project::ProjectScope::Root
-                );
-                if action == "directory" {
-                    let (_, cwd) = form.test_inputs();
-                    cwd.update(cx, |input, cx| input.set_text(r"C:\work\subfolder", cx));
-                    cwd.read(cx).focus_handle().focus(window, cx);
-                    window.activate_window();
-                } else {
-                    form.test_project().focus_handle(cx).focus(window, cx);
-                }
-            })
-            .unwrap();
-        visual.run_until_parked();
-        if action == "directory" {
-            visual.simulate_keystrokes("tab");
-        } else {
-            visual.simulate_keystrokes("enter down enter");
-            if action == "root" || action == "browse" {
-                visual.simulate_keystrokes("enter up enter");
-            }
-        }
-        visual.run_until_parked();
-        if action == "browse" {
-            window
-                .update(&mut visual, |root, window, cx| {
-                    root.start_chat_modal
-                        .as_ref()
-                        .unwrap()
-                        .test_folder_picker()
-                        .unwrap()
-                        .update(cx, |picker, cx| picker.toggle(window, cx));
-                })
-                .unwrap();
-            visual.run_until_parked();
-            visual.simulate_keystrokes("enter");
-            visual.run_until_parked();
-        }
-        fake.local_requests.lock().unwrap().clear();
-        window
-            .update(&mut visual, |root, window, cx| {
-                let form = root.start_chat_modal.as_ref().unwrap();
-                let expected = if action == "root" {
-                    runner_core::protocol::project::ProjectScope::Root
-                } else {
-                    runner_core::protocol::project::ProjectScope::Project("host-project".into())
-                };
-                assert_eq!(form.test_project().scope(), expected);
-                window.dispatch_action(Box::new(ConfirmStartChat), cx);
-            })
-            .unwrap();
-        visual.run_until_parked();
-        let starts = action_trace(&fake, "startChat");
-        assert_eq!(starts.len(), 1);
-        if action == "root" {
-            assert!(starts[0]["project"].is_null());
-        } else {
-            assert_eq!(starts[0]["project"], "host-project");
-        }
-        assert_eq!(
-            starts[0]["cwd"],
-            if action == "directory" {
-                r"C:\work\subfolder"
-            } else {
-                r"C:\work"
-            }
-        );
-        assert!(fake.local_requests.lock().unwrap().is_empty());
-    }
-}
-
-#[test]
-fn shared_remote_start_uses_host_choices_and_keeps_success_pending_until_push() {
-    let _theme = crate::theme_snapshot::ThemeGuard::new();
-    let temp = tempfile::tempdir().unwrap();
-    let mut cx = TestAppContext::single();
-    let (store, fake, _) = fixture(&mut cx, temp.path());
-    enable_front_page(&fake);
-    let window = add_window(&mut cx, &store, temp.path(), "host-start");
-    window
-        .update(&mut cx, |root, window, cx| {
-            root.choose_computer(computers()[1].clone(), false, window, cx)
-        })
-        .unwrap();
-    cx.run_until_parked();
-    let catalog = serde_json::json!({"roles":[],"runtimes":[{"name":"codex","label":"Host Codex","available":true,"nativeFork":true,"defaultModel":null,"defaultEffort":null,"models":[],"efforts":[],"speeds":["standard","fast"]}],"accounts":[],"activeAccount":"","crews":[],"projects":[{"id":"p","name":"Active host project","path":"C:\\active"},{"id":"other-project","name":"Other host project","path":"C:\\other"}],"recentFolders":[]});
-    fake.queue_result("catalog", Ok(catalog.clone()));
-    let local_settings = store.read_with(&cx, |store, _| store.settings.clone());
-    fake.local_requests.lock().unwrap().clear();
-    let mut visual = VisualTestContext::from_window(window.into(), &cx);
-    let create = visual.debug_bounds("SIDEBAR_WORKSPACE_NEW_CHAT").unwrap();
-    visual.simulate_click(create.center(), Default::default());
-    visual.run_until_parked();
-    assert!(visual.debug_bounds("START_CHAT_FORM").is_some());
-    window
-        .read_with(&visual, |root, cx| {
-            let (_, cwd) = root.start_chat_modal.as_ref().unwrap().test_inputs();
-            assert_eq!(cwd.read(cx).text(), r"C:\active");
-        })
-        .unwrap();
-    visual.update(|window, cx| window.dispatch_action(Box::new(ConfirmStartChat), cx));
-    visual.run_until_parked();
-    let starts = action_trace(&fake, "startChat");
-    assert_eq!(starts.len(), 1);
-    assert_eq!(starts[0]["runtime"], "codex");
-    assert_eq!(starts[0]["cwd"], r"C:\active");
-    for key in ["model", "effort", "speed", "role"] {
-        assert!(starts[0][key].is_null(), "{key}");
-    }
-    assert_eq!(starts[0]["project"], "p");
-    assert!(starts[0]["cols"].as_u64().unwrap() >= 20);
-    assert!(starts[0]["rows"].as_u64().unwrap() >= 8);
-    assert!(action_trace(&fake, "rename").is_empty());
-    window
-        .read_with(&visual, |root, _| {
-            let remote = root.remote_client.workspace().unwrap();
-            assert_eq!(remote.layouts.len(), 1);
-            assert_eq!(remote.activate_session.as_deref(), Some("started-session"));
-            assert_eq!(root.tabs.tabs().len(), 0);
-        })
-        .unwrap();
-    let mut pushed = overview();
-    let mut tab = pushed.tabs[0].clone();
-    tab.id = "started-tab".into();
-    tab.panes = runner_core::companion::Pane::Leaf {
-        session: Some("started-session".into()),
-    };
-    pushed.tabs.push(tab);
-    pushed
-        .sessions
-        .insert("started-session".into(), pushed.sessions["s"].clone());
-    fake.set_overview(pushed);
-    visual.run_until_parked();
-    window
-        .read_with(&visual, |root, _| {
-            let remote = root.remote_client.workspace().unwrap();
-            assert!(remote.active == Some(RemoteItem::Tab("started-tab".into())));
-            assert!(remote.activate_session.is_none());
-        })
-        .unwrap();
-    assert_eq!(
-        store.read_with(&visual, |store, _| store
-            .settings
-            .default_working_dir
-            .clone()),
-        local_settings.default_working_dir
-    );
-    assert!(fake.local_requests.lock().unwrap().is_empty());
-    let mut listed = store.read_with(&visual, |store, cx| {
-        store.remote_clients.read(cx).overviews["host"].clone()
-    });
-    listed.projects.push(runner_core::companion::Project {
-        id: "other-project".into(),
-        name: "Other project".into(),
-    });
-    fake.set_overview(listed);
-    visual.run_until_parked();
-    let project = visual
-        .debug_bounds("SIDEBAR_PROJECT:other-project")
-        .unwrap();
-    visual.simulate_click(project.center(), Default::default());
-    visual.run_until_parked();
-    fake.queue_result("catalog", Ok(catalog));
-    window
-        .update(&mut visual, |root, window, cx| {
-            root.open_new_tab_modal(&NewTab, window, cx)
-        })
-        .unwrap();
-    visual.run_until_parked();
-    assert_eq!(action_trace(&fake, "catalog").len(), 3);
-    visual.update(|window, cx| window.dispatch_action(Box::new(ConfirmStartChat), cx));
-    visual.run_until_parked();
-    assert_eq!(
-        action_trace(&fake, "startChat")[1]["project"],
-        "other-project"
-    );
-}
-
-#[test]
-fn remote_chat_rename_and_shell_placement_retry_do_not_start_twice() {
-    let _theme = crate::theme_snapshot::ThemeGuard::new();
-    let temp = tempfile::tempdir().unwrap();
-    let mut cx = TestAppContext::single();
-    let (store, fake, _) = fixture(&mut cx, temp.path());
-    enable_front_page(&fake);
-    fake.action_results.lock().unwrap().insert(
-        "rename".into(),
-        [Err(ClientError::msg("rename refused"))].into(),
-    );
-    let window = add_window(&mut cx, &store, temp.path(), "partial-start");
-    window
-        .update(&mut cx, |root, window, cx| {
-            root.choose_computer(computers()[1].clone(), false, window, cx)
-        })
-        .unwrap();
-    cx.run_until_parked();
-    window
-        .update(&mut cx, |root, window, cx| {
-            root.open_new_tab_modal(&NewTab, window, cx)
-        })
-        .unwrap();
-    cx.run_until_parked();
-    window
-        .update(&mut cx, |root, window, cx| {
-            let (title, _) = root.start_chat_modal.as_ref().unwrap().test_inputs();
-            title.update(cx, |field, cx| {
-                field.replace_text_in_range(None, "Host title", window, cx)
-            });
-        })
-        .unwrap();
-    let mut visual = VisualTestContext::from_window(window.into(), &cx);
-    visual.update(|window, cx| window.dispatch_action(Box::new(ConfirmStartChat), cx));
-    visual.run_until_parked();
-    assert_eq!(action_trace(&fake, "startChat").len(), 1);
-    assert_eq!(action_trace(&fake, "rename").len(), 1);
-    assert!(visual.debug_bounds("START_CHAT_FORM").is_some());
-    visual.update(|window, cx| window.dispatch_action(Box::new(ConfirmStartChat), cx));
-    visual.run_until_parked();
-    assert_eq!(action_trace(&fake, "startChat").len(), 1);
-    assert_eq!(action_trace(&fake, "rename").len(), 2);
-    fake.action_results.lock().unwrap().insert(
-        "layout".into(),
-        [Err(ClientError::msg("placement refused"))].into(),
-    );
-    window
-        .update(&mut visual, |root, _, cx| {
-            let draft = root.front_page_layout().unwrap().clone();
-            root.remote_start_shell(draft.clone(), None, (83, 27), cx);
-            let mut another = draft;
-            another.id = "another-tab".into();
-            root.remote_start_shell(another, None, (83, 27), cx);
-        })
-        .unwrap();
-    visual.run_until_parked();
-    assert_eq!(action_trace(&fake, "startShell").len(), 1);
-    assert_eq!(action_trace(&fake, "layout").len(), 1);
-    window
-        .update(&mut visual, |root, _, cx| {
-            let draft = root.front_page_layout().unwrap().clone();
-            assert!(draft.drawer_shells().is_empty());
-            root.remote_start_shell(draft, None, (83, 27), cx);
-        })
-        .unwrap();
-    visual.run_until_parked();
-    assert_eq!(action_trace(&fake, "startShell").len(), 1);
-    assert_eq!(action_trace(&fake, "layout").len(), 2);
-    assert_eq!(action_trace(&fake, "startShell")[0]["cols"], 83);
-    assert_eq!(action_trace(&fake, "startShell")[0]["rows"], 27);
-}
-
-#[test]
 fn remote_layout_waits_for_topology_push_and_serializes_each_tab() {
     let _theme = crate::theme_snapshot::ThemeGuard::new();
     let temp = tempfile::tempdir().unwrap();
@@ -4483,155 +4202,6 @@ fn capability_bootstrap_cannot_replace_pushed_state_when_another_window_opens() 
 }
 
 #[test]
-fn host_folder_menu_preserves_typed_paths_until_choice_and_retries_explicitly() {
-    let _theme = crate::theme_snapshot::ThemeGuard::new();
-    let temp = tempfile::tempdir().unwrap();
-    let mut cx = TestAppContext::single();
-    let (store, fake, _) = fixture(&mut cx, temp.path());
-    enable_front_page(&fake);
-    fake.computers.lock().unwrap()[1].info.platform = "windows".into();
-    store
-        .read_with(&cx, |store, _| store.remote_clients.clone())
-        .update(&mut cx, |clients, cx| clients.refresh(cx));
-    cx.run_until_parked();
-    let window = add_window(&mut cx, &store, temp.path(), "folder-menu");
-    window
-        .update(&mut cx, |root, window, cx| {
-            let mut host = computers()[1].clone();
-            host.info.platform = "windows".into();
-            root.choose_computer(host, false, window, cx);
-        })
-        .unwrap();
-    cx.run_until_parked();
-    window
-        .update(&mut cx, |root, window, cx| {
-            root.open_new_tab_modal(&NewTab, window, cx)
-        })
-        .unwrap();
-    cx.run_until_parked();
-    let (cwd, picker) = window
-        .read_with(&cx, |root, _| {
-            let modal = root.start_chat_modal.as_ref().unwrap();
-            (modal.test_inputs().1, modal.test_folder_picker().unwrap())
-        })
-        .unwrap();
-    window
-        .update(&mut cx, |_, window, cx| {
-            picker.update(cx, |picker, cx| picker.toggle(window, cx))
-        })
-        .unwrap();
-    let mut visual = VisualTestContext::from_window(window.into(), &cx);
-    visual.update(|window, _| window.activate_window());
-    visual.run_until_parked();
-    assert!(visual.debug_bounds("HOST_FOLDER_MENU").is_some());
-    assert!(visual.debug_bounds("HOST_FOLDER_ROW:choice-0").is_some());
-    assert!(visual.debug_bounds("HOST_FOLDER_ROW:choice-1").is_some());
-    assert!(visual.debug_bounds("HOST_FOLDER_ROW:choice-2").is_none());
-    assert_eq!(
-        cwd.read_with(&visual, |field, _| field.text().to_owned()),
-        ""
-    );
-    let project = visual.debug_bounds("HOST_FOLDER_ROW:choice-0").unwrap();
-    visual.simulate_click(project.center(), Default::default());
-    visual.run_until_parked();
-    assert_eq!(
-        cwd.read_with(&visual, |field, _| field.text().to_owned()),
-        "C:\\work"
-    );
-    window
-        .update(&mut visual, |_, window, cx| {
-            picker.update(cx, |picker, cx| picker.toggle(window, cx))
-        })
-        .unwrap();
-    visual.run_until_parked();
-    visual.simulate_keystrokes("escape");
-    visual.run_until_parked();
-    assert!(visual.debug_bounds("HOST_FOLDER_MENU").is_none());
-    assert_eq!(
-        cwd.read_with(&visual, |field, _| field.text().to_owned()),
-        "C:\\work"
-    );
-    fake.action_results.lock().unwrap().insert("folders".into(), [Ok(serde_json::json!({"path":"C:\\Users\\Jason", "parent":"C:\\Users", "folders":["work"]})), Err(ClientError::msg("denied")), Ok(serde_json::json!({"path":"C:\\Users\\Jason\\work", "parent":"C:\\Users\\Jason", "folders":[]}))].into());
-    window
-        .update(&mut visual, |_, window, cx| {
-            picker.update(cx, |picker, cx| picker.toggle(window, cx))
-        })
-        .unwrap();
-    visual.run_until_parked();
-    let browse = visual.debug_bounds("HOST_FOLDER_ROW:browse").unwrap();
-    visual.simulate_click(browse.center(), Default::default());
-    visual.run_until_parked();
-    assert!(action_trace(&fake, "folders").last().unwrap()["path"].is_null());
-    assert!(visual.debug_bounds("HOST_FOLDER_ROW:parent").is_some());
-    let child = visual.debug_bounds("HOST_FOLDER_ROW:child-0").unwrap();
-    visual.simulate_click(child.center(), Default::default());
-    visual.run_until_parked();
-    assert!(visual.debug_bounds("HOST_FOLDER_FAILED").is_some());
-    assert_eq!(
-        cwd.read_with(&visual, |field, _| field.text().to_owned()),
-        "C:\\work"
-    );
-    let count = action_trace(&fake, "folders").len();
-    visual.run_until_parked();
-    assert_eq!(action_trace(&fake, "folders").len(), count);
-    let retry = visual.debug_bounds("HOST_FOLDER_ROW:retry").unwrap();
-    visual.simulate_click(retry.center(), Default::default());
-    visual.run_until_parked();
-    assert!(visual.debug_bounds("HOST_FOLDER_EMPTY").is_some());
-    assert_eq!(
-        action_trace(&fake, "folders").last().unwrap()["path"],
-        "C:\\Users\\Jason\\work"
-    );
-    visual.simulate_keystrokes("up enter");
-    visual.run_until_parked();
-    assert_eq!(
-        cwd.read_with(&visual, |field, _| field.text().to_owned()),
-        "C:\\Users\\Jason\\work"
-    );
-    assert!(visual.debug_bounds("HOST_FOLDER_MENU").is_none());
-    fake.action_results.lock().unwrap().insert(
-        "folders".into(),
-        [Err(ClientError::msg("invalid folder"))].into(),
-    );
-    window
-        .update(&mut visual, |_, window, cx| {
-            cwd.read(cx).focus_handle().focus(window, cx);
-            cwd.update(cx, |field, cx| {
-                field.replace_text_in_range(None, "\\\\nas\\share\\missing", window, cx)
-            });
-        })
-        .unwrap();
-    visual.run_until_parked();
-    window
-        .update(&mut visual, |_, window, cx| {
-            assert!(
-                cwd.read(cx).focus_handle().is_focused(window),
-                "cwd did not focus"
-            )
-        })
-        .unwrap();
-    visual.simulate_keystrokes("tab");
-    visual.run_until_parked();
-    assert!(
-        picker.read_with(&visual, |picker, _| picker.path_error.is_some()),
-        "folder calls: {:?}",
-        action_trace(&fake, "folders")
-    );
-    assert!(cwd.read_with(&visual, |field, _| field
-        .text()
-        .ends_with("\\\\nas\\share\\missing")));
-    window
-        .update(&mut visual, |_, window, cx| {
-            picker.update(cx, |picker, cx| picker.toggle(window, cx))
-        })
-        .unwrap();
-    visual.run_until_parked();
-    visual.simulate_click(point(px(1.), px(1.)), Default::default());
-    visual.run_until_parked();
-    assert!(visual.debug_bounds("HOST_FOLDER_MENU").is_none());
-}
-
-#[test]
 fn picker_follows_only_online_paired_computers_and_releases_on_lock_offline_and_off() {
     let _theme = crate::theme_snapshot::ThemeGuard::new();
     let temp = tempfile::tempdir().unwrap();
@@ -4730,90 +4300,6 @@ fn picker_follows_only_online_paired_computers_and_releases_on_lock_offline_and_
 }
 
 #[test]
-fn missing_folder_capability_keeps_typed_host_paths_and_rejects_local_routes() {
-    let _theme = crate::theme_snapshot::ThemeGuard::new();
-    let temp = tempfile::tempdir().unwrap();
-    let mut cx = TestAppContext::single();
-    let (store, fake, _) = fixture(&mut cx, temp.path());
-    *fake.features.lock().unwrap() = vec!["catalog".into(), "startChat".into()];
-    let window = add_window(&mut cx, &store, temp.path(), "typed-host-path");
-    window
-        .update(&mut cx, |root, window, cx| {
-            root.choose_computer(computers()[1].clone(), false, window, cx)
-        })
-        .unwrap();
-    cx.run_until_parked();
-    let route = window.read_with(&cx, |root, _| root.route.clone()).unwrap();
-    fake.local_requests.lock().unwrap().clear();
-    window
-        .update(&mut cx, |root, window, cx| {
-            root.enter_settings_route(None, window, cx);
-            root.open_roles(window, cx);
-            root.open_crews(window, cx);
-            root.set_route(AppRoute::ArchivedChat, cx);
-            root.open_start_mission_modal(
-                None,
-                runner_core::protocol::project::ProjectScope::Root,
-                window,
-                cx,
-            );
-            assert_eq!(root.route, route);
-            assert!(root.start_mission_modal.is_none());
-            root.open_new_tab_modal(&NewTab, window, cx);
-        })
-        .unwrap();
-    cx.run_until_parked();
-    window
-        .update(&mut cx, |root, window, cx| {
-            let modal = root.start_chat_modal.as_ref().unwrap();
-            let (_, cwd) = modal.test_inputs();
-            cwd.update(cx, |field, cx| {
-                field.replace_text_in_range(None, r"\\nas\share\work", window, cx)
-            });
-            modal
-                .test_folder_picker()
-                .unwrap()
-                .update(cx, |picker, cx| {
-                    picker.toggle(window, cx);
-                    assert!(!picker.open);
-                });
-        })
-        .unwrap();
-    let mut visual = VisualTestContext::from_window(window.into(), &cx);
-    visual.update(|window, cx| window.dispatch_action(Box::new(ConfirmStartChat), cx));
-    visual.run_until_parked();
-    assert_eq!(
-        action_trace(&fake, "startChat")[0]["cwd"],
-        r"\\nas\share\work"
-    );
-    assert!(action_trace(&fake, "folders").is_empty());
-    assert!(action_trace(&fake, "rename").is_empty());
-    assert!(fake.local_requests.lock().unwrap().is_empty());
-    window
-        .update(&mut visual, |root, window, cx| {
-            root.open_new_tab_modal(&NewTab, window, cx)
-        })
-        .unwrap();
-    visual.run_until_parked();
-    assert!(visual.debug_bounds("START_CHAT_FORM").is_some());
-    fake.emit(
-        "remote/connection",
-        serde_json::json!({"computer":"host","state":"reconnecting"}),
-    );
-    visual.run_until_parked();
-    assert!(visual.debug_bounds("START_CHAT_FORM").is_none());
-    fake.emit(
-        "remote/connection",
-        serde_json::json!({"computer":"host","state":"connected"}),
-    );
-    visual.run_until_parked();
-    assert_eq!(action_trace(&fake, "startChat").len(), 1);
-    window
-        .read_with(&visual, |root, _| assert_eq!(root.route, route))
-        .unwrap();
-}
-
-#[test]
 fn placed_starts_ignore_intermediate_tabs_and_activate_only_the_destination() {
     let _theme = crate::theme_snapshot::ThemeGuard::new();
     for placement in ["chat", "split-shell", "drawer"] {
@@ -4847,8 +4333,8 @@ fn placed_starts_ignore_intermediate_tabs_and_activate_only_the_destination() {
                 .unwrap();
             cx.run_until_parked();
             window
-                .update(&mut cx, |_, window, cx| {
-                    window.dispatch_action(Box::new(ConfirmStartChat), cx)
+                .update(&mut cx, |root, window, cx| {
+                    root.test_start_launcher(window, cx)
                 })
                 .unwrap();
         } else {
@@ -4972,8 +4458,8 @@ fn a_newer_host_topology_supersedes_a_chat_fill_result_and_allows_the_next_edit(
         .unwrap();
     cx.run_until_parked();
     window
-        .update(&mut cx, |_, window, cx| {
-            window.dispatch_action(Box::new(ConfirmStartChat), cx)
+        .update(&mut cx, |root, window, cx| {
+            root.test_start_launcher(window, cx)
         })
         .unwrap();
     window
@@ -5389,7 +4875,7 @@ fn navigating_before_results_or_confirming_pushes_cancels_remote_activation() {
             }
             window
                 .update(&mut cx, |root, window, cx| match operation {
-                    "chat-fill" => window.dispatch_action(Box::new(ConfirmStartChat), cx),
+                    "chat-fill" => root.test_start_launcher(window, cx),
                     "split-shell" | "drawer" => {
                         let draft = root.front_page_layout().unwrap().clone();
                         let pane =
@@ -5528,50 +5014,6 @@ fn late_shell_placement_failure_settles_without_showing_errors_or_retrying_in_an
         action_trace(&fake, "layout").last().unwrap()["target"]["id"],
         "tab-b"
     );
-}
-
-#[test]
-fn navigation_cancels_a_start_form_waiting_for_its_catalog_without_holding_the_new_form() {
-    let _theme = crate::theme_snapshot::ThemeGuard::new();
-    let temp = tempfile::tempdir().unwrap();
-    let mut cx = TestAppContext::single();
-    let (store, fake, _) = fixture(&mut cx, temp.path());
-    enable_front_page(&fake);
-    let window = add_window(&mut cx, &store, temp.path(), "catalog-navigation");
-    window
-        .update(&mut cx, |root, window, cx| {
-            root.choose_computer(computers()[1].clone(), false, window, cx)
-        })
-        .unwrap();
-    cx.run_until_parked();
-    let catalogs_before = action_trace(&fake, "catalog").len();
-    window
-        .update(&mut cx, |root, window, cx| {
-            root.open_new_tab_modal(&NewTab, window, cx);
-            assert!(root
-                .remote_client
-                .workspace()
-                .unwrap()
-                .actions_pending
-                .contains("catalog"));
-            root.select_remote_item(Item::Mission("remote-mission".into()), cx);
-        })
-        .unwrap();
-    cx.run_until_parked();
-    window
-        .update(&mut cx, |root, window, cx| {
-            assert!(root.start_chat_modal.is_none());
-            let remote = root.remote_client.workspace().unwrap();
-            assert!(remote.active == Some(Item::Mission("remote-mission".into())));
-            assert!(remote.actions_pending.is_empty());
-            root.open_new_tab_modal(&NewTab, window, cx);
-        })
-        .unwrap();
-    cx.run_until_parked();
-    window
-        .read_with(&cx, |root, _| assert!(root.start_chat_modal.is_some()))
-        .unwrap();
-    assert_eq!(action_trace(&fake, "catalog").len(), catalogs_before + 2);
 }
 
 pub(crate) fn enable_missions(fake: &Fake) {
@@ -5828,7 +5270,7 @@ fn remote_libraries_filter_page_and_refresh_errors_without_local_preferences() {
 }
 
 #[test]
-fn remote_role_library_launch_refreshes_and_preselects_the_clicked_host_role() {
+fn remote_role_library_chat_starts_the_clicked_host_role_directly() {
     let _theme = crate::theme_snapshot::ThemeGuard::new();
     let temp = tempfile::tempdir().unwrap();
     let mut cx = TestAppContext::single();
@@ -5851,16 +5293,14 @@ fn remote_role_library_launch_refreshes_and_preselects_the_clicked_host_role() {
     let chat = visual.debug_bounds("ROLE_ROW_CHAT:host-role-1").unwrap();
     visual.simulate_click(chat.center(), Default::default());
     visual.run_until_parked();
-    assert!(visual.debug_bounds("START_CHAT_FORM").is_some());
-    visual.update(|window, cx| window.dispatch_action(Box::new(ConfirmStartChat), cx));
-    visual.run_until_parked();
+    assert!(visual.debug_bounds("START_CHAT_FORM").is_none());
     let starts = action_trace(&fake, "startChat");
     assert_eq!(starts.len(), 1);
     assert_eq!(starts[0]["role"], "host-role-1");
     for field in ["runtime", "cwd", "model", "effort", "speed", "project"] {
         assert!(starts[0][field].is_null(), "{field}");
     }
-    assert_eq!(action_trace(&fake, "catalog").len(), 3);
+    assert_eq!(action_trace(&fake, "catalog").len(), 2);
 }
 
 #[test]
@@ -5962,24 +5402,19 @@ fn remote_role_library_does_not_replace_a_removed_role_with_another() {
         .unwrap();
     cx.run_until_parked();
     let mut visual = VisualTestContext::from_window(window.into(), &cx);
-    fake.queue_result("catalog", Ok(library_catalog(1)));
+    fake.queue_result(
+        "startChat",
+        Err(runner_core::protocol::ClientError::msg("Role unavailable")),
+    );
     let chat = visual.debug_bounds("ROLE_ROW_CHAT:host-role-1").unwrap();
     visual.simulate_click(chat.center(), Default::default());
     visual.run_until_parked();
     window
         .read_with(&visual, |root, _| {
             assert!(root.start_chat_modal.is_none());
-            assert_eq!(
-                root.remote_client
-                    .workspace()
-                    .unwrap()
-                    .action_error
-                    .as_deref(),
-                Some(crate::i18n::text("client.role_unavailable"))
-            );
         })
         .unwrap();
-    assert!(action_trace(&fake, "startChat").is_empty());
+    assert_eq!(action_trace(&fake, "startChat")[0]["role"], "host-role-1");
 }
 
 #[test]
@@ -6262,4 +5697,76 @@ fn remote_terminal_keyboard_copy_interrupt_and_paste_follow_platform_bindings() 
         fake.input.lock().unwrap().last().unwrap().1,
         b"remote paste"
     );
+}
+
+#[test]
+fn remote_terminal_pane_shortcut_and_sidebar_close_dispatch_without_confirmation() {
+    let _theme = crate::theme_snapshot::ThemeGuard::new();
+    for entry in ["pane", "shortcut", "sidebar"] {
+        let temp = tempfile::tempdir().unwrap();
+        let mut cx = TestAppContext::single();
+        let (store, fake, _) = fixture(&mut cx, temp.path());
+        enable_front_page(&fake);
+        let mut data = overview();
+        data.sessions.get_mut("s").unwrap().kind = runner_core::companion::SessionKind::Shell;
+        data.sessions.get_mut("s").unwrap().runtime = Some("shell".into());
+        fake.set_overview(data);
+        let window = add_window(&mut cx, &store, temp.path(), "immediate-terminal-close");
+        window.update(&mut cx, choose_host).unwrap();
+        cx.run_until_parked();
+        window
+            .update(&mut cx, |root, window, cx| {
+                let layout = root.front_page_layout().unwrap().clone();
+                match entry {
+                    "pane" => {
+                        root.request_close_terminal_pane(&layout.focused_pane_id, "s", window, cx)
+                    }
+                    "shortcut" => root.close_remote_front_page(window, cx),
+                    "sidebar" => root.request_close_terminal_tab(&layout.id, "s", window, cx),
+                    _ => unreachable!(),
+                }
+                assert!(root.terminal_close_confirm.is_none());
+            })
+            .unwrap();
+        cx.run_until_parked();
+        assert_eq!(fake.request_count("close"), 1, "{entry}");
+        assert_eq!(fake.request_count("archive"), 0, "{entry}");
+        window
+            .read_with(&cx, |root, _| {
+                assert!(root.terminal_close_confirm.is_none())
+            })
+            .unwrap();
+    }
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn remote_library_pages_keep_the_lower_titlebar_band_draggable() {
+    let _theme = crate::theme_snapshot::ThemeGuard::new();
+    let temp = tempfile::tempdir().unwrap();
+    let mut cx = TestAppContext::single();
+    let (store, fake, _) = fixture(&mut cx, temp.path());
+    enable_front_page(&fake);
+    let window = add_window(&mut cx, &store, temp.path(), "library-titlebar");
+    window.update(&mut cx, choose_host).unwrap();
+    cx.run_until_parked();
+    let mut visual = VisualTestContext::from_window(window.into(), &cx);
+    for item in [Item::Roles, Item::Crews] {
+        window
+            .update(&mut visual, |root, _, cx| {
+                root.select_remote_item(item.clone(), cx)
+            })
+            .unwrap();
+        visual.run_until_parked();
+        let drag = visual.debug_bounds("MAIN_TITLEBAR_DRAG").unwrap();
+        let chrome = visual.debug_bounds("APP_CHROME").unwrap();
+        let at = gpui::point(drag.right() - px(120.), chrome.top() + px(40.));
+        assert!(drag.contains(&at));
+        visual.simulate_mouse_down(at, MouseButton::Left, gpui::Modifiers::default());
+        window
+            .read_with(&visual, |root, _| assert!(root.titlebar_drag_armed))
+            .unwrap();
+        visual.simulate_mouse_up(at, MouseButton::Left, gpui::Modifiers::default());
+        visual.run_until_parked();
+    }
 }

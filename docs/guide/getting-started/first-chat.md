@@ -5,10 +5,10 @@ Start a chat to work with one agent in its own terminal. You can choose the agen
 ## Start and finish a small task
 
 1. [Install and sign in to an agent](install.md), then open Runner.
-2. Press **⌘N** / **Ctrl+N** to open **Start a chat**. If an empty pane has focus, the chat will fill it; otherwise it starts in a new tab.
-3. Choose **Direct** and select your agent, or choose **Role** and select a saved role such as **Coder**. The seeded Coder role requires Codex. Model and effort choices depend on the agent; leaving them at their defaults uses the agent or role configuration.
-4. Choose **Project**, or **No project** to list the chat under Recents. A project fills **Working directory** with its folder; check or change the path before starting. A directory inside another project updates the selection when you leave the field.
-5. Click **Start chat**, or press **⌘Enter** / **Ctrl+Enter**.
+2. Press **⌘N** / **Ctrl+N** to focus the launcher in an empty pane, or open it in a new tab.
+3. Check the folder below **Search agents and roles**. On the default page, choose a project or **No project**; use **Change** to pick another folder. In a split pane, the project stays with its tab and the folder starts from a neighbouring session.
+4. Type an agent or role name, then press **Enter** or click its row. With the search empty, **1–4** start the corresponding recent entry. Agent rows use the agent’s own configuration; roles use their saved settings. A role’s own directory takes precedence unless you used **Change**.
+5. The chat starts immediately, without a form. Rename it from the pane menu when needed.
 6. In the terminal, send a small prompt such as: “List the top-level files in this folder and explain what each is for. Do not change any files.” Complete any sign-in, trust or approval prompts in the agent's own terminal.
 7. Wait for the agent's reply. Its terminal remains available for follow-up questions. When finished, click the **Stop chat** icon at the right of the pane’s header, before ⋯, or **⇧⌘X** / **Ctrl+Shift+X** with that session focused.
 
@@ -16,7 +16,7 @@ A stopped chat remains in Runner. Its centered **Chat stopped** card has a **Res
 
 ## Add another pane
 
-Press **⌘D** / **Ctrl+D** to split right, or **⇧⌘D** / **Ctrl+Shift+D** to split down. Use **New chat** in the empty pane to select another agent or role. Each pane holds a separate session; splitting does not copy the first agent's conversation or create a mission.
+Press **⌘D** / **Ctrl+D** to split right, or **⇧⌘D** / **Ctrl+Shift+D** to split down. Use the launcher in the empty pane to search for and start another agent or role. Each pane holds a separate session; splitting does not copy the first agent's conversation or create a mission.
 
 ## Open a shell
 

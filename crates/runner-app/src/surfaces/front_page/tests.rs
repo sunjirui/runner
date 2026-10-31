@@ -509,7 +509,13 @@ fn local_workspace_mutations_keep_daemon_requests_arguments_and_errors() {
         }
     );
     dispatch!(
-        client.rename_session("chat", None),
+        client.rename_title(
+            ActionTarget {
+                kind: ActionKind::Session,
+                id: "chat".into()
+            },
+            None
+        ),
         Request::session_rename {
             session_id: "chat".into(),
             title: None
@@ -1190,4 +1196,179 @@ fn remote_actions_publish_pending_and_clear_errors_before_held_requests_complete
         );
         assert!(trace.completed.load(Ordering::SeqCst));
     }
+}
+
+struct HeldLauncherStart {
+    base: Arc<crate::surfaces::remote_client::tests::Fake>,
+    calls: std::sync::atomic::AtomicUsize,
+    entered: std::sync::mpsc::Sender<()>,
+    release: Mutex<std::sync::mpsc::Receiver<()>>,
+}
+impl Transport for HeldLauncherStart {
+    fn call(&self, request: Request) -> Result<Response, ClientError> {
+        let value = serde_json::to_value(&request).unwrap();
+        if value["remote_request"]["request"]["type"] == "startChat"
+            && self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst) == 0
+        {
+            self.entered.send(()).unwrap();
+            self.release
+                .lock()
+                .unwrap()
+                .recv_timeout(std::time::Duration::from_secs(5))
+                .unwrap();
+        }
+        self.base.call(request)
+    }
+    fn subscribe(&self) -> Box<dyn EventSubscription> {
+        self.base.subscribe()
+    }
+    fn attach_remote(
+        &self,
+        config: runner_core::remote::RemoteTerminal,
+    ) -> Result<runner_core::protocol::terminal::TerminalAttachment, ClientError> {
+        self.base.attach_remote(config)
+    }
+}
+
+#[test]
+fn delayed_launcher_starts_serialize_two_empty_panes_and_preserve_the_first_assignment() {
+    use crate::surfaces::remote_client::tests as remote_test;
+    use std::sync::{atomic::Ordering, mpsc};
+    let _theme = crate::theme_snapshot::ThemeGuard::new();
+    let temp = tempfile::tempdir().unwrap();
+    let mut cx = gpui::TestAppContext::single();
+    let (store, fake, _) = remote_test::fixture(&mut cx, temp.path());
+    remote_test::enable_front_page(&fake);
+    let mut data = remote_test::overview();
+    data.tabs[0].panes = serde_json::from_value(
+        json!({"split":"column","sizes":[0.5,0.5],"a":{"session":null},"b":{"session":null}}),
+    )
+    .unwrap();
+    fake.set_overview(data.clone());
+    let (entered, started) = mpsc::channel();
+    let (release, blocked) = mpsc::channel();
+    let (attempted, attempts) = mpsc::channel();
+    let trace = Arc::new(HeldLauncherStart {
+        base: fake.clone(),
+        calls: Default::default(),
+        entered,
+        release: Mutex::new(blocked),
+    });
+    store.update(&mut cx, |store, _| {
+        store.client = DaemonClient::new(trace.clone())
+    });
+    let window = remote_test::add_window(&mut cx, &store, temp.path(), "serialized-launchers");
+    window.update(&mut cx, remote_test::choose_host).unwrap();
+    let other = remote_test::add_window(&mut cx, &store, temp.path(), "other-launcher-window");
+    other.update(&mut cx, remote_test::choose_host).unwrap();
+    cx.run_until_parked();
+    let observer = std::thread::spawn(move || {
+        let entered = started.recv_timeout(std::time::Duration::from_secs(5));
+        let attempted = attempts.recv_timeout(std::time::Duration::from_secs(5));
+        let _ = release.send(());
+        (entered, attempted)
+    });
+    window
+        .update(&mut cx, |root, window, cx| {
+            let original = root.front_page_layout().unwrap().clone();
+            let first = original.root.leaves()[0].id.clone();
+            let second = original.root.leaves()[1].id.clone();
+            root.focus_pane(&first, cx);
+            root.test_start_launcher(window, cx);
+            assert!(root.launcher_tab_pending(&original.id, cx));
+            root.focus_pane(&second, cx);
+            root.test_start_launcher(window, cx);
+            root.split_pane(&second, SplitOrientation::Row, window, cx);
+            root.close_pane(&second, window, cx);
+            assert_eq!(root.front_page_layout().unwrap().root, original.root);
+            assert!(root.remote_client.layout_pending(&original.id));
+        })
+        .unwrap();
+    attempted.send(()).unwrap();
+    cx.run_until_parked();
+    let (entered, attempted) = observer.join().unwrap();
+    entered.unwrap();
+    attempted.unwrap();
+    assert_eq!(trace.calls.load(Ordering::SeqCst), 1);
+    let layouts = remote_test::action_trace(&fake, "layout");
+    assert_eq!(layouts.len(), 1);
+    assert_eq!(layouts[0]["panes"]["a"]["session"], "started-session");
+    assert!(layouts[0]["panes"]["b"]["session"].is_null());
+    other
+        .update(&mut cx, |root, window, cx| {
+            let layout = root.front_page_layout().unwrap();
+            assert!(root.launcher_tab_pending(&layout.id, cx));
+            let second = layout.root.leaves()[1].id.clone();
+            root.focus_pane(&second, cx);
+            root.test_start_launcher(window, cx);
+        })
+        .unwrap();
+    cx.run_until_parked();
+    assert_eq!(trace.calls.load(Ordering::SeqCst), 1);
+    data.tabs[0].panes = serde_json::from_value(json!({"split":"column","sizes":[0.5,0.5],"a":{"session":"started-session"},"b":{"session":null}})).unwrap();
+    data.sessions
+        .insert("started-session".into(), data.sessions["s"].clone());
+    fake.set_overview(data);
+    cx.run_until_parked();
+    fake.queue_result("startChat", Ok(json!({"session":"second-session"})));
+    other
+        .update(&mut cx, |root, window, cx| {
+            let layout = root.front_page_layout().unwrap();
+            assert!(!root.launcher_tab_pending(&layout.id, cx));
+            let second = layout.root.leaves()[1].id.clone();
+            root.focus_pane(&second, cx);
+            root.test_start_launcher(window, cx);
+        })
+        .unwrap();
+    cx.run_until_parked();
+    assert_eq!(trace.calls.load(Ordering::SeqCst), 2);
+    let layouts = remote_test::action_trace(&fake, "layout");
+    assert_eq!(layouts.len(), 2);
+    assert_eq!(layouts[1]["panes"]["a"]["session"], "started-session");
+    assert_eq!(layouts[1]["panes"]["b"]["session"], "second-session");
+}
+
+#[test]
+fn closing_a_single_empty_remote_tab_is_blocked_during_a_held_launcher_start() {
+    use crate::surfaces::remote_client::tests as remote_test;
+    use std::sync::mpsc;
+    let _theme = crate::theme_snapshot::ThemeGuard::new();
+    let temp = tempfile::tempdir().unwrap();
+    let mut cx = gpui::TestAppContext::single();
+    let (store, fake, _) = remote_test::fixture(&mut cx, temp.path());
+    remote_test::enable_front_page(&fake);
+    let mut data = remote_test::overview();
+    data.tabs[0].panes = runner_core::companion::Pane::Leaf { session: None };
+    fake.set_overview(data);
+    let (entered, started) = mpsc::channel();
+    let (release, blocked) = mpsc::channel();
+    let trace = Arc::new(HeldLauncherStart {
+        base: fake.clone(),
+        calls: Default::default(),
+        entered,
+        release: Mutex::new(blocked),
+    });
+    store.update(&mut cx, |store, _| store.client = DaemonClient::new(trace));
+    let window = remote_test::add_window(&mut cx, &store, temp.path(), "held-empty-close");
+    window.update(&mut cx, remote_test::choose_host).unwrap();
+    cx.run_until_parked();
+    let observer = std::thread::spawn(move || {
+        started
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .unwrap();
+        release.send(()).unwrap();
+    });
+    window
+        .update(&mut cx, |root, window, cx| {
+            let original = root.front_page_layout().unwrap().clone();
+            root.test_start_launcher(window, cx);
+            crate::surfaces::windowing::close_tab(root, window, cx);
+            assert!(root.launcher_tab_pending(&original.id, cx));
+            assert_eq!(root.front_page_layout().unwrap().id, original.id);
+        })
+        .unwrap();
+    cx.run_until_parked();
+    observer.join().unwrap();
+    assert!(remote_test::action_trace(&fake, "archive").is_empty());
+    assert_eq!(remote_test::action_trace(&fake, "layout").len(), 1);
 }

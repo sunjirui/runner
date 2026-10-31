@@ -1,4 +1,6 @@
 use crate::surfaces::panes::{MIN_SPLIT_PANE_HEIGHT, MIN_SPLIT_PANE_WIDTH};
+#[cfg(test)]
+use crate::surfaces::{pane_close_behavior, PaneCloseBehavior};
 use crate::*;
 
 // Fixed sidebar content with the computer picker measured 364.5 px at 1×.
@@ -11,7 +13,6 @@ fn opening_window_minimum(settings: &AppSettings) -> gpui::Size<gpui::Pixels> {
     )
 }
 
-#[cfg(not(test))]
 pub(crate) fn close_tab(this: &mut NativeRoot, window: &mut Window, cx: &mut Context<NativeRoot>) {
     if this.remote_client.is_active() {
         this.close_remote_front_page(window, cx);
@@ -174,6 +175,8 @@ pub(crate) fn open_runner_window(
     let result = cx.open_window(
         WindowOptions {
             window_bounds: Some(bounds),
+            #[cfg(target_os = "macos")]
+            app_owns_titlebar_drag: true,
             window_min_size: Some(opening_window_minimum(&app_store.read(cx).settings)),
             #[cfg(target_os = "linux")]
             app_id: Some(platform_ui::DESKTOP_APP_ID.into()),

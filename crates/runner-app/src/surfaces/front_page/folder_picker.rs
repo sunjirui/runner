@@ -656,6 +656,12 @@ mod tests {
     };
     use gpui::{TestAppContext, VisualTestContext};
 
+    struct PickerHost(Entity<FolderPicker>);
+    impl Render for PickerHost {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            div().size_full().child(self.0.clone())
+        }
+    }
     #[test]
     fn pending_listing_blocks_navigation_and_selection_but_back_discards_its_reply() {
         let _theme = crate::theme_snapshot::ThemeGuard::new();
@@ -666,21 +672,32 @@ mod tests {
         let window = add_window(&mut cx, &store, temp.path(), "pending-folders");
         window.update(&mut cx, choose_host).unwrap();
         cx.run_until_parked();
-        window
-            .update(&mut cx, |root, window, cx| {
-                root.open_new_tab_modal(&NewTab, window, cx)
-            })
-            .unwrap();
-        cx.run_until_parked();
         let picker = window
-            .read_with(&cx, |root, _| {
-                root.start_chat_modal
-                    .as_ref()
-                    .unwrap()
-                    .test_folder_picker()
-                    .unwrap()
+            .update(&mut cx, |root, _, cx| {
+                let input = cx.new(|cx| TextField::new(cx.focus_handle(), "", "", true));
+                let client = root.front_page_client(cx);
+                cx.new(|cx| {
+                    FolderPicker::new(
+                        client,
+                        "Host".into(),
+                        "windows".into(),
+                        input,
+                        Vec::new(),
+                        cx,
+                    )
+                })
             })
             .unwrap();
+        picker.update(&mut cx, |picker, cx| {
+            picker.set_anchor(
+                Bounds {
+                    origin: point(px(40.), px(40.)),
+                    size: size(px(360.), px(32.)),
+                },
+                cx,
+            )
+        });
+        let window = cx.add_window(|_, _| PickerHost(picker.clone()));
         window
             .update(&mut cx, |_, window, cx| {
                 picker.update(cx, |picker, cx| {

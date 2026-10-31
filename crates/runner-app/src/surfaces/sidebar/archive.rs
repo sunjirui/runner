@@ -163,6 +163,12 @@ impl NativeRoot {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if session_ids
+            .iter()
+            .any(|id| self.launcher_session_pending(id, cx))
+        {
+            return;
+        }
         let remote = self.front_page_client(cx).is_remote();
         let error_target = match source {
             ArchiveAllSource::Chat => ArchiveErrorTarget::Chat,

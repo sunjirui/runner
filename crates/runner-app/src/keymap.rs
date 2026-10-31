@@ -12,8 +12,8 @@ use crate::{
     NavigateNextPage, NavigatePreviousPage, NewMission, NewTab, NewTerminal, NewWindow,
     OpenSettings, Paste, ResumeFocusedSession, SelectTab1, SelectTab2, SelectTab3, SelectTab4,
     SelectTab5, SelectTab6, SelectTab7, SelectTab8, SelectTab9, SplitPaneDown, SplitPaneRight,
-    StartChatDirect, StartChatRole, StopFocusedSession, ToggleFullscreen, ToggleSidebar,
-    ToggleTerminalDrawer, ZoomIn, ZoomOut, ZoomReset,
+    StopFocusedSession, ToggleFullscreen, ToggleSidebar, ToggleTerminalDrawer, ZoomIn, ZoomOut,
+    ZoomReset,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1079,16 +1079,6 @@ fn install_modal_bindings(cx: &mut App) {
             ConfirmStartMission,
             Some("!(!StartMission)"),
         ),
-        KeyBinding::new(
-            &platform_default("cmd-1"),
-            StartChatDirect,
-            Some("!(!StartChat)"),
-        ),
-        KeyBinding::new(
-            &platform_default("cmd-2"),
-            StartChatRole,
-            Some("!(!StartChat)"),
-        ),
     ]);
 }
 
@@ -1305,42 +1295,6 @@ mod tests {
     }
 
     #[test]
-    fn gpui_contextless_bindings_need_modal_bindings_at_the_focused_depth_loaded_last() {
-        let cx = gpui::TestAppContext::single();
-        cx.update(|cx| {
-            let key = Keystroke::parse(&platform_default("cmd-2")).unwrap();
-            let contexts = [gpui::KeyContext::parse("StartChat").unwrap()];
-            cx.bind_keys([
-                KeyBinding::new(&platform_default("cmd-2"), StartChatRole, Some("StartChat")),
-                KeyBinding::new(&platform_default("cmd-2"), SelectTab2, None),
-            ]);
-            assert!(cx
-                .key_bindings()
-                .borrow()
-                .bindings_for_input(std::slice::from_ref(&key), &contexts)
-                .0[0]
-                .action()
-                .partial_eq(&SelectTab2));
-            install_bindings(cx, &KeymapOverrides::new(), false);
-            for contexts in [
-                contexts.to_vec(),
-                vec![
-                    contexts[0].clone(),
-                    gpui::KeyContext::parse("TextInput").unwrap(),
-                ],
-            ] {
-                assert!(cx
-                    .key_bindings()
-                    .borrow()
-                    .bindings_for_input(std::slice::from_ref(&key), &contexts)
-                    .0[0]
-                    .action()
-                    .partial_eq(&StartChatRole));
-            }
-        });
-    }
-
-    #[test]
     fn fixed_modal_confirm_wins_user_global_overrides_at_every_control_depth() {
         let cx = gpui::TestAppContext::single();
         cx.update(|cx| {
@@ -1426,12 +1380,7 @@ mod tests {
             install_bindings(cx, &KeymapOverrides::new(), true);
             let bindings = cx.key_bindings();
             let bindings = bindings.borrow();
-            for action in [
-                &ConfirmStartChat as &dyn gpui::Action,
-                &ConfirmStartMission,
-                &StartChatDirect,
-                &StartChatRole,
-            ] {
+            for action in [&ConfirmStartChat as &dyn gpui::Action, &ConfirmStartMission] {
                 assert_eq!(bindings.bindings_for_action(action).count(), 1);
             }
             assert!(entries()

@@ -254,14 +254,14 @@ impl RenderOnce for SessionControl {
                 }])
             })
             .children(icon_element)
-            .when(!header, |control| control.child(label));
+            .when(!header, |control| control.child(label))
+            .when(
+                header || (!disabled && cfg!(any(windows, target_os = "linux"))),
+                |control| {
+                    control.on_mouse_down(gpui::MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                },
+            );
         if !disabled {
-            #[cfg(any(windows, target_os = "linux"))]
-            {
-                control = control.on_mouse_down(gpui::MouseButton::Left, |_, _, cx| {
-                    cx.stop_propagation();
-                });
-            }
             control = control.hover(move |control| match self.kind {
                 SessionControlKind::Resume if header => control
                     .bg(theme::with_alpha(theme::accent(), 0.1))
@@ -318,6 +318,7 @@ mod tests {
     use std::cell::Cell;
 
     struct HeaderControlHost {
+        disabled: bool,
         parent_mouse_down: Rc<Cell<bool>>,
         control_clicked: Rc<Cell<bool>>,
     }
@@ -339,6 +340,7 @@ mod tests {
                         .child(
                             SessionControl::new("header-stop", SessionControlKind::Stop)
                                 .variant(SessionControlVariant::Header)
+                                .lifecycle_disabled(self.disabled)
                                 .on_press(move |_, _| control_clicked.set(true)),
                         ),
                 )
@@ -346,27 +348,27 @@ mod tests {
     }
 
     #[test]
-    fn header_control_mouse_down_preserves_platform_drag_behavior() {
-        let mut cx = TestAppContext::single();
-        let parent_mouse_down = Rc::new(Cell::new(false));
-        let control_clicked = Rc::new(Cell::new(false));
-        let parent_for_host = parent_mouse_down.clone();
-        let clicked_for_host = control_clicked.clone();
-        let window = cx.add_window(move |_, _| HeaderControlHost {
-            parent_mouse_down: parent_for_host,
-            control_clicked: clicked_for_host,
-        });
-        cx.run_until_parked();
-        let mut window = VisualTestContext::from_window(window.into(), &cx);
-        let bounds = window.debug_bounds("HEADER_SESSION_CONTROL").unwrap();
-        window.simulate_click(bounds.center(), Modifiers::default());
-        window.run_until_parked();
+    fn header_controls_consume_mouse_down_even_when_disabled() {
+        for disabled in [false, true] {
+            let mut cx = TestAppContext::single();
+            let parent_mouse_down = Rc::new(Cell::new(false));
+            let control_clicked = Rc::new(Cell::new(false));
+            let parent_for_host = parent_mouse_down.clone();
+            let clicked_for_host = control_clicked.clone();
+            let window = cx.add_window(move |_, _| HeaderControlHost {
+                disabled,
+                parent_mouse_down: parent_for_host,
+                control_clicked: clicked_for_host,
+            });
+            cx.run_until_parked();
+            let mut window = VisualTestContext::from_window(window.into(), &cx);
+            let bounds = window.debug_bounds("HEADER_SESSION_CONTROL").unwrap();
+            window.simulate_click(bounds.center(), Modifiers::default());
+            window.run_until_parked();
 
-        assert!(control_clicked.get());
-        #[cfg(any(windows, target_os = "linux"))]
-        assert!(!parent_mouse_down.get());
-        #[cfg(target_os = "macos")]
-        assert!(parent_mouse_down.get());
+            assert_eq!(control_clicked.get(), !disabled);
+            assert!(!parent_mouse_down.get());
+        }
     }
     struct SlotControlHost {
         kind: SessionControlKind,

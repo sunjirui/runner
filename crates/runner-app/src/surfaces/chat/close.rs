@@ -11,6 +11,9 @@ impl NativeRoot {
         let Some(mut draft) = self.front_page_layout().cloned() else {
             return;
         };
+        if self.launcher_tab_pending(&draft.id, cx) {
+            return;
+        }
         let closing_session_id = draft
             .root
             .leaves()
@@ -59,6 +62,9 @@ impl NativeRoot {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.launcher_session_pending(session_id, cx) {
+            return;
+        }
         let remote = self.front_page_client(cx).is_remote();
         if !remote
             && self
@@ -124,42 +130,7 @@ impl NativeRoot {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.remote_client.is_active() {
-            TerminalCloseConfirm::open(
-                &mut self.terminal_close_confirm,
-                TerminalCloseTarget::Pane {
-                    pane_id: pane_id.into(),
-                    session_id: session_id.into(),
-                },
-                window,
-                cx,
-            );
-            cx.notify();
-            return;
-        }
-
-        match self
-            .core(cx)
-            .session_shell_has_foreground_process(session_id)
-        {
-            Ok(true) => {
-                TerminalCloseConfirm::open(
-                    &mut self.terminal_close_confirm,
-                    TerminalCloseTarget::Pane {
-                        pane_id: pane_id.to_owned(),
-                        session_id: session_id.to_owned(),
-                    },
-                    window,
-                    cx,
-                );
-                cx.notify();
-            }
-            Ok(false) => self.close_terminal_pane(pane_id, session_id, window, cx),
-            Err(error) => {
-                self.chat_error = Some(error.to_string().into());
-                cx.notify();
-            }
-        }
+        self.close_terminal_pane(pane_id, session_id, window, cx);
     }
 
     pub(crate) fn request_close_chat_pane(
@@ -169,6 +140,9 @@ impl NativeRoot {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.launcher_session_pending(session_id, cx) {
+            return;
+        }
         if self.remote_client.is_active() {
             if let Some(layout) = self.front_page_layout() {
                 let target = archive_chat_pane_target(layout, pane_id, session_id);
@@ -198,7 +172,6 @@ impl NativeRoot {
         cx.notify();
     }
 
-    #[cfg(not(test))]
     pub(crate) fn request_close_single_pane_tab(
         &mut self,
         window: &mut Window,
@@ -208,6 +181,9 @@ impl NativeRoot {
             return;
         };
         let tab_id = layout.id.clone();
+        if self.launcher_tab_pending(&tab_id, cx) {
+            return;
+        }
         let pane_id = layout.focused_pane_id.clone();
         let session_id = layout.focused_session_id().map(str::to_owned);
         let shell_ids = layout.drawer_shells().to_vec();
@@ -287,49 +263,10 @@ impl NativeRoot {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.remote_client.is_active() {
-            self.select_remote_item(
-                crate::surfaces::remote_client::RemoteItem::Tab(tab_id.into()),
-                cx,
-            );
-            TerminalCloseConfirm::open(
-                &mut self.terminal_close_confirm,
-                TerminalCloseTarget::Tab {
-                    session_id: session_id.into(),
-                },
-                window,
-                cx,
-            );
-            cx.notify();
+        if self.launcher_tab_pending(tab_id, cx) {
             return;
         }
-
-        match self
-            .core(cx)
-            .session_shell_has_foreground_process(session_id)
-        {
-            Ok(true) => {
-                self.tabs.activate(tab_id);
-                self.set_route(AppRoute::Chat, cx);
-                if let Err(error) = self.ensure_active_tab_attached(window, cx) {
-                    self.chat_error = Some(error.to_string().into());
-                }
-                TerminalCloseConfirm::open(
-                    &mut self.terminal_close_confirm,
-                    TerminalCloseTarget::Tab {
-                        session_id: session_id.to_owned(),
-                    },
-                    window,
-                    cx,
-                );
-                cx.notify();
-            }
-            Ok(false) => self.close_terminal_tab(session_id, window, cx),
-            Err(error) => {
-                self.error = Some(error.to_string().into());
-                cx.notify();
-            }
-        }
+        self.close_terminal_tab(session_id, window, cx);
     }
 
     pub(super) fn close_terminal_tab(
@@ -338,6 +275,9 @@ impl NativeRoot {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.launcher_session_pending(session_id, cx) {
+            return;
+        }
         let remote = self.front_page_client(cx).is_remote();
         if !remote {
             self.terminal_close_confirm = None;
@@ -480,10 +420,6 @@ impl NativeRoot {
         };
         confirm.restore_focus(window, cx);
         match confirm.target {
-            TerminalCloseTarget::Pane {
-                pane_id,
-                session_id,
-            } => self.close_terminal_pane(&pane_id, &session_id, window, cx),
             TerminalCloseTarget::ArchiveChatPane { session_id, close } => {
                 self.archive_workspace_sessions(
                     vec![session_id],
@@ -492,18 +428,6 @@ impl NativeRoot {
                     window,
                     cx,
                 );
-            }
-            TerminalCloseTarget::Tab { session_id } => {
-                self.close_terminal_tab(&session_id, window, cx)
-            }
-            TerminalCloseTarget::MissionDrawer { session_id } => {
-                let workspace = self
-                    .remote_client
-                    .remote_mission_workspace()
-                    .unwrap_or_else(|| self.mission_workspace.clone());
-                workspace.update(cx, |workspace, workspace_cx| {
-                    workspace.close_terminal_drawer_shell(&session_id, window, workspace_cx)
-                });
             }
             TerminalCloseTarget::ArchiveAll {
                 session_ids,

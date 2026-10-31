@@ -178,6 +178,14 @@ impl Sidebar {
             self.clear_sidebar_drag("drop", cx);
             return;
         };
+        if self
+            .shell
+            .upgrade()
+            .is_some_and(|root| root.read(cx).launcher_tab_pending(&node.id, cx))
+        {
+            self.clear_sidebar_drag("start-pending", cx);
+            return;
+        }
         let ordered = |ids: Vec<String>| {
             ids.into_iter()
                 .filter_map(|id| nodes.iter().find(|node| node.id == id).cloned())

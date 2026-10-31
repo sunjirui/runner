@@ -20,7 +20,7 @@ The list starts with 10 roles per page. Use **10 / page** in the footer to choos
 
 ## Roles in chats and crews
 
-In **Start a chat → Role**, choosing a role copies its settings into the launch. Changes in that dialog apply to that chat; they do not rewrite the saved role. **Direct** starts an agent without needing a role.
+Search for a saved role in the chat launcher and click it or press Enter to start with its saved runtime, model, effort, speed and instructions. Agent rows start without a role and use the agent’s own configuration. A role’s **Chat** action starts it directly and updates the same per-computer recent list. Change saved role settings on its role page; chats start unnamed and can be renamed from the pane menu.
 
 A [crew slot](crews.md) references a role and gives it an in-crew handle. The same role can fill several slots, each with a different handle. A slot can override the runtime, model, effort and Codex speed. Changing the runtime resets engine-specific settings to the new runtime's defaults before its overrides are applied.
 

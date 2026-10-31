@@ -247,6 +247,7 @@ pub struct StyledSelect {
     compact: bool,
     picker: bool,
     full_width: bool,
+    inline_trigger: bool,
     runtime_style: bool,
     monospace: bool,
     mono_descriptions: bool,
@@ -285,6 +286,7 @@ impl StyledSelect {
             compact: false,
             picker: false,
             full_width: false,
+            inline_trigger: false,
             runtime_style: false,
             monospace: false,
             mono_descriptions: false,
@@ -352,6 +354,13 @@ impl StyledSelect {
     pub fn full_width(mut self, full_width: bool) -> Self {
         self.full_width = full_width;
         self
+    }
+
+    pub fn set_inline_trigger(&mut self, inline: bool, cx: &mut Context<Self>) {
+        if self.inline_trigger != inline {
+            self.inline_trigger = inline;
+            cx.notify();
+        }
     }
 
     pub fn is_disabled(&self) -> bool {
@@ -552,7 +561,8 @@ impl Render for StyledSelect {
         let label = selected
             .map(|option| option.label.clone())
             .unwrap_or_else(|| self.placeholder.clone());
-        let stacked = self.detailed || self.picker;
+        let inline = self.inline_trigger;
+        let stacked = (self.detailed || self.picker) && !inline;
         let description = stacked
             .then(|| {
                 selected.and_then(|option| {
@@ -564,15 +574,19 @@ impl Render for StyledSelect {
             })
             .flatten();
         let swatch = selected.and_then(|option| option.swatch);
-        let leading = selected.and_then(|option| option.leading.clone());
+        let leading = (!inline)
+            .then(|| selected.and_then(|option| option.leading.clone()))
+            .flatten();
         let marked = selected.is_some_and(|option| option.marked);
-        let picker = self.picker;
-        let compact = self.compact;
+        let picker = self.picker && !inline;
+        let trigger_compact = self.compact || inline;
         let open = self.state.is_open();
         let entity = cx.entity();
         let click_entity = entity.clone();
         let click_focus = self.focus_handle.clone();
-        let height = if compact {
+        let height = if inline {
+            20.
+        } else if trigger_compact {
             24.
         } else if picker {
             60.
@@ -587,13 +601,17 @@ impl Render for StyledSelect {
             .debug_selector(move || format!("STYLED_SELECT_{debug_id}"))
             .id(self.id.clone())
             .relative()
-            .when(self.picker || self.full_width, |root| root.w_full())
-            .when(compact, |root| {
+            .when((self.picker || self.full_width) && !inline, |root| {
+                root.w_full()
+            })
+            .when(inline, |root| root.min_w(px(0.)))
+            .when(trigger_compact, |root| {
                 root.flex_none().max_w(rems(f32::from(self.width) / 16.))
             })
-            .when(!(self.picker || self.full_width || compact), |root| {
-                root.w(rems(f32::from(self.width) / 16.))
-            })
+            .when(
+                !(self.picker || self.full_width || trigger_compact),
+                |root| root.w(rems(f32::from(self.width) / 16.)),
+            )
             .on_key_down(cx.listener(Self::on_key_down))
             .child(
                 div()
@@ -602,9 +620,11 @@ impl Render for StyledSelect {
                     .track_focus(&self.focus_handle.clone().tab_stop(!self.disabled))
                     .tab_index(0)
                     .tab_stop(!self.disabled)
-                    .when(!compact, |trigger| trigger.w_full())
+                    .when(!trigger_compact, |trigger| trigger.w_full())
                     .h(rems(height / 16.))
-                    .px(rems(if compact {
+                    .px(rems(if inline {
+                        0.
+                    } else if trigger_compact {
                         6. / 16.
                     } else if stacked {
                         12. / 16.
@@ -613,7 +633,7 @@ impl Render for StyledSelect {
                     }))
                     .flex()
                     .items_center()
-                    .gap(rems(if compact {
+                    .gap(rems(if trigger_compact {
                         4. / 16.
                     } else if picker {
                         12. / 16.
@@ -625,13 +645,19 @@ impl Render for StyledSelect {
                             .rounded_tl(rems(7. / 16.))
                             .rounded_tr(rems(7. / 16.))
                     })
-                    .when(compact, |trigger| {
+                    .when(inline, |trigger| {
+                        trigger
+                            .group("inline-select-trigger")
+                            .line_height(rems(20. / 16.))
+                            .text_color(theme::muted())
+                    })
+                    .when(trigger_compact && !inline, |trigger| {
                         trigger
                             .line_height(rems(18. / 16.))
                             .rounded(rems(4. / 16.))
                             .when(open, |trigger| trigger.bg(theme::raised()))
                     })
-                    .when(!picker && !compact, |trigger| {
+                    .when(!picker && !trigger_compact, |trigger| {
                         trigger
                             .rounded(rems(if self.detailed { 6. / 16. } else { 4. / 16. }))
                             .border_1()
@@ -651,7 +677,9 @@ impl Render for StyledSelect {
                         trigger
                             .cursor_pointer()
                             .hover(move |trigger| {
-                                if picker || compact {
+                                if inline {
+                                    trigger.text_color(theme::text())
+                                } else if picker || trigger_compact {
                                     trigger.bg(theme::raised())
                                 } else {
                                     trigger.border_color(theme::faint())
@@ -667,7 +695,9 @@ impl Render for StyledSelect {
                             })
                     })
                     .focus_visible(move |style| {
-                        if picker || compact {
+                        if inline {
+                            style.text_color(theme::text()).underline()
+                        } else if picker || trigger_compact {
                             style.bg(theme::raised())
                         } else {
                             style.border_color(theme::faint())
@@ -680,7 +710,16 @@ impl Render for StyledSelect {
                             .rounded(rems(2. / 16.))
                             .bg(rgb(color))
                     }))
-                    .children(leading.map(|leading| leading.draw(if picker { 40. } else { 13. })))
+                    .children(leading.map(|leading| {
+                        let icon = leading.draw(if picker { 40. } else { 13. });
+                        #[cfg(test)]
+                        let icon = div()
+                            .debug_selector(|| "STYLED_SELECT_TRIGGER_LEADING".into())
+                            .flex_none()
+                            .child(icon)
+                            .into_any_element();
+                        icon
+                    }))
                     .child(
                         div()
                             .debug_selector(|| "STYLED_SELECT_TEXT".into())
@@ -695,7 +734,9 @@ impl Render for StyledSelect {
                                         format!("STYLED_SELECT_VALUE_{debug_value_id}")
                                     })
                                     .truncate()
-                                    .text_size(if compact {
+                                    .text_size(if inline {
+                                        rems(12. / 16.)
+                                    } else if trigger_compact {
                                         theme::text_ui()
                                     } else if picker {
                                         theme::text_lead()
@@ -704,15 +745,17 @@ impl Render for StyledSelect {
                                     } else {
                                         theme::text_title()
                                     })
-                                    .font_weight(if stacked {
+                                    .font_weight(if inline || stacked {
                                         FontWeight::SEMIBOLD
                                     } else {
                                         FontWeight::NORMAL
                                     })
-                                    .text_color(if compact {
-                                        theme::muted()
-                                    } else {
-                                        theme::text()
+                                    .when(!inline, |label| {
+                                        label.text_color(if trigger_compact {
+                                            theme::muted()
+                                        } else {
+                                            theme::text()
+                                        })
                                     })
                                     .when(self.monospace, |label| {
                                         label.font_family(theme::UI_MONOSPACE_FONT)
@@ -742,14 +785,16 @@ impl Render for StyledSelect {
                     }))
                     .child(
                         svg()
-                            .path(if picker {
+                            .path(if inline {
+                                "chevron-down.svg"
+                            } else if picker {
                                 "chevrons-up-down.svg"
                             } else if open {
                                 "chevron-up.svg"
                             } else {
                                 "chevron-down.svg"
                             })
-                            .size(rems(if compact {
+                            .size(rems(if trigger_compact {
                                 12. / 16.
                             } else if picker {
                                 1.
@@ -757,7 +802,12 @@ impl Render for StyledSelect {
                                 14. / 16.
                             }))
                             .flex_none()
-                            .text_color(theme::faint()),
+                            .text_color(theme::faint())
+                            .when(inline, |chevron| {
+                                chevron.group_hover("inline-select-trigger", |chevron| {
+                                    chevron.text_color(theme::text())
+                                })
+                            }),
                     ),
             )
             .child(
@@ -786,7 +836,7 @@ impl Render for StyledSelect {
                     zoom,
                 )
             };
-            root = root.child(if compact || self.wrapped_menu_width.is_some() {
+            root = root.child(if self.compact || self.wrapped_menu_width.is_some() {
                 crate::ui::menu::popup_layer_right_aligned(
                     anchor,
                     window,
