@@ -273,6 +273,20 @@ async fn next_non_overview(adapter: &mut Adapter) -> serde_json::Value {
         }
     }
 }
+// An overview that finishes before the status scan carries the change and supersedes its status push.
+async fn next_stopped(adapter: &mut Adapter, session: &str) {
+    loop {
+        let message = next(adapter).await;
+        let status = match message["type"].as_str() {
+            Some("status") => &message["status"],
+            Some("overview") => &message["sessions"][session]["status"],
+            _ => panic!("expected the stopped status, got {message}"),
+        };
+        if status == "stopped" {
+            return;
+        }
+    }
+}
 async fn attach(adapter: &mut Adapter, session: &str) {
     adapter.request(request(serde_json::json!({"type":"attach","id":1,"session":session,"cols":80,"rows":24,"control":"take","history":2}))).await.unwrap();
     assert_eq!(next(adapter).await["type"], "result");
@@ -1383,7 +1397,7 @@ async fn a_stopped_session_still_closes_after_its_exit_event_was_lost() {
         .status = Status::Stopped;
     fake.events.emit("chat/tab-attention-changed", &());
     adapter.changed().await.unwrap();
-    assert_eq!(next_non_overview(&mut adapter).await["type"], "status");
+    next_stopped(&mut adapter, &session).await;
     wait_for_end(&adapter).await;
     assert_eq!(next_non_overview(&mut adapter).await["type"], "closed");
 }
@@ -1484,7 +1498,7 @@ async fn exit_archive_and_status_recovery_drain_a_held_frame_before_closing() {
         }
         adapter.changed().await.unwrap();
         if change == "status" {
-            assert_eq!(next_non_overview(&mut adapter).await["type"], "status");
+            next_stopped(&mut adapter, &session).await;
         }
         assert!(cancelled.load(Ordering::SeqCst));
         let mut premature = adapter.next(true).await.unwrap();
