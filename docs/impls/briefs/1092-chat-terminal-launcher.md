@@ -60,3 +60,5 @@ Jason added #1093 to this mission as a separate `fix(ui)` commit: restore the si
 Jason also authorized a separate `fix(ui)` commit making all terminal closes immediate: pane ×, the focused-terminal close shortcut, and sidebar terminal-tab close, locally and remotely, including a foreground command. Remove the obsolete terminal confirmation targets/strings and update tests and both-language guides. Chat archive confirmations and archive-all counts stay unchanged. QA closes a terminal running `sleep 100` by each entry point without a dialog and verifies that archiving a running chat still asks.
 
 Both follow-ups use the same frozen-snapshot code review, orchestrator go and QA gates. They add no agents or missions, and keep the open-PR/green-CI stopping point and all merge/release/cleanup prohibitions above.
+
+The orchestrator approved combining #1092 phases 2 and 3 into one reviewed commit on 2026-10-31 under AGENTS.md’s crew-shaped PR history. The launcher model, #1093 and immediate terminal close remain separate commits.

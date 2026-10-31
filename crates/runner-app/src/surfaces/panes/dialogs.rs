@@ -2,31 +2,21 @@ use super::*;
 
 impl NativeRoot {
     pub(crate) fn render_terminal_close_confirm(&self, cx: &mut Context<Self>) -> AnyElement {
-        let (title, body, confirm_label, pending_label, icon) = match self
+        let confirm = self
             .terminal_close_confirm
             .as_ref()
-            .map(|confirm| &confirm.target)
-        {
-            Some(TerminalCloseTarget::Tab { .. } | TerminalCloseTarget::MissionDrawer { .. }) => (
-                crate::i18n::text("ui.close_terminal_confirmation"),
-                crate::i18n::text(
-                    "ui.a_foreground_process_is_still_running_closing_this_terminal_will_stop_it",
-                )
-                .to_owned(),
-                crate::i18n::text("ui.close_terminal"),
-                crate::i18n::text("ui.closing"),
-                "trash.svg",
-            ),
-            Some(TerminalCloseTarget::ArchiveAll {
+            .expect("archive confirm is open");
+        let (title, body, confirm_label, pending_label, icon) = match &confirm.target {
+            TerminalCloseTarget::ArchiveAll {
                 confirmation_body, ..
-            }) => (
+            } => (
                 crate::i18n::text("ui.archive_tab"),
                 confirmation_body.resolve().to_string(),
                 crate::i18n::text("ui.archive"),
                 crate::i18n::text("ui.archiving"),
                 "trash.svg",
             ),
-            Some(TerminalCloseTarget::ArchiveChatPane { session_id, .. }) => {
+            TerminalCloseTarget::ArchiveChatPane { session_id, .. } => {
                 let entry = self.front_page_session(session_id, cx);
                 let label = entry
                     .as_ref()
@@ -43,16 +33,6 @@ impl NativeRoot {
                     "archive.svg",
                 )
             }
-            _ => (
-                crate::i18n::text("ui.close_terminal_confirmation"),
-                crate::i18n::text(
-                    "ui.a_foreground_process_is_still_running_closing_this_pane_will_stop_it",
-                )
-                .to_owned(),
-                crate::i18n::text("ui.close_terminal"),
-                crate::i18n::text("ui.closing"),
-                "trash.svg",
-            ),
         };
         let root = cx.entity();
         let confirm_root = root.clone();
@@ -69,13 +49,7 @@ impl NativeRoot {
                 root.update(cx, |this, cx| this.cancel_terminal_close(window, cx));
             }),
         )
-        .focus_handle(
-            self.terminal_close_confirm
-                .as_ref()
-                .expect("close confirm is open")
-                .focus
-                .clone(),
-        )
+        .focus_handle(confirm.focus.clone())
         .icon(icon)
         .into_any_element()
     }

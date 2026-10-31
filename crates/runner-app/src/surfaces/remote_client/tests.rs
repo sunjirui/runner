@@ -5699,6 +5699,46 @@ fn remote_terminal_keyboard_copy_interrupt_and_paste_follow_platform_bindings() 
     );
 }
 
+#[test]
+fn remote_terminal_pane_shortcut_and_sidebar_close_dispatch_without_confirmation() {
+    let _theme = crate::theme_snapshot::ThemeGuard::new();
+    for entry in ["pane", "shortcut", "sidebar"] {
+        let temp = tempfile::tempdir().unwrap();
+        let mut cx = TestAppContext::single();
+        let (store, fake, _) = fixture(&mut cx, temp.path());
+        enable_front_page(&fake);
+        let mut data = overview();
+        data.sessions.get_mut("s").unwrap().kind = runner_core::companion::SessionKind::Shell;
+        data.sessions.get_mut("s").unwrap().runtime = Some("shell".into());
+        fake.set_overview(data);
+        let window = add_window(&mut cx, &store, temp.path(), "immediate-terminal-close");
+        window.update(&mut cx, choose_host).unwrap();
+        cx.run_until_parked();
+        window
+            .update(&mut cx, |root, window, cx| {
+                let layout = root.front_page_layout().unwrap().clone();
+                match entry {
+                    "pane" => {
+                        root.request_close_terminal_pane(&layout.focused_pane_id, "s", window, cx)
+                    }
+                    "shortcut" => root.close_remote_front_page(window, cx),
+                    "sidebar" => root.request_close_terminal_tab(&layout.id, "s", window, cx),
+                    _ => unreachable!(),
+                }
+                assert!(root.terminal_close_confirm.is_none());
+            })
+            .unwrap();
+        cx.run_until_parked();
+        assert_eq!(fake.request_count("close"), 1, "{entry}");
+        assert_eq!(fake.request_count("archive"), 0, "{entry}");
+        window
+            .read_with(&cx, |root, _| {
+                assert!(root.terminal_close_confirm.is_none())
+            })
+            .unwrap();
+    }
+}
+
 #[cfg(target_os = "macos")]
 #[test]
 fn remote_library_pages_keep_the_lower_titlebar_band_draggable() {

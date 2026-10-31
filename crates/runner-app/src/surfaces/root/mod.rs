@@ -149,19 +149,9 @@ pub(crate) struct PaneRename {
 }
 
 pub(crate) enum TerminalCloseTarget {
-    Pane {
-        pane_id: String,
-        session_id: String,
-    },
     ArchiveChatPane {
         session_id: String,
         close: PendingPaneClose,
-    },
-    Tab {
-        session_id: String,
-    },
-    MissionDrawer {
-        session_id: String,
     },
     ArchiveAll {
         session_ids: Vec<String>,

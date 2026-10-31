@@ -26,7 +26,7 @@ When a runtime wraps an underlined URL onto indented rows or a hyperlink inside 
 | Fork a chat | Creates another chat from the conversation, for runtimes that support forking |
 | Archive a chat | Stops it and removes it from active chat lists; find it in Settings → Archived |
 
-Shells have no Stop, Resume or Restart controls. Interrupt commands with Ctrl+C. Closing a terminal or exiting its shell with any exit code closes the pane rather than archiving it. Closing a window saves its layout and can leave its sessions running; closing a pane or chat tab is a separate action, so read any confirmation before accepting it.
+Shells have no Stop, Resume or Restart controls. Interrupt commands with Ctrl+C. Closing a terminal or exiting its shell with any exit code closes the pane rather than archiving it. Terminal pane ×, the close shortcut, sidebar terminal close and mission-drawer shell close act immediately without confirmation, locally and remotely, even while a command runs. Archiving a chat still asks for confirmation, and Archive all keeps its chat/terminal counts. Closing a window saves its layout and can leave its sessions running.
 
 ## Claude Code accounts
 

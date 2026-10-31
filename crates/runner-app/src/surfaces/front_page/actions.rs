@@ -706,6 +706,14 @@ impl NativeRoot {
                 }
                 None => self.close_pane(&pane, window, cx),
             }
+        } else if let Some(session) = layout
+            .focused_session_id()
+            .and_then(|id| self.front_page_session(id, cx))
+            .filter(|session| {
+                session.agent_runtime == "shell" && layout.all_session_ids().len() == 1
+            })
+        {
+            self.request_close_terminal_tab(&layout.id, &session.session_id, window, cx);
         } else if !layout.all_session_ids().is_empty() {
             self.request_archive_all(
                 Some(&layout.id),
