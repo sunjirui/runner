@@ -2351,7 +2351,10 @@ fn picker_dismisses_at_tab_boundaries_and_escape_works_after_internal_traversal(
                             );
                             false
                         } else {
-                            assert!(root.root_focus.is_focused(window));
+                            assert!(
+                                root.root_focus.is_focused(window)
+                                    || root.launcher_search_focused(window, cx)
+                            );
                             true
                         }
                     })

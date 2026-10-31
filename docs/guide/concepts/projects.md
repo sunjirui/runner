@@ -6,9 +6,9 @@ The sidebar defaults to Projects. The list-filter button beside Search switches 
 
 Create a project from the sidebar and choose its directory. New chats and missions started in that project use its directory. You can still supply a different working directory when starting work.
 
-The default chat launcher and **Start mission** start with the active project, or **No project**. A project’s **+ → New chat** opens a new launcher tab with that project selected. On the launcher’s default page, the inline project picker and **Change** set the folder for the next start. In a split pane, the tab’s project stays locked and the initial folder follows its neighbour.
+The default chat launcher and **Start mission** start with the active project, or **No project**. A project’s **+ → New chat** opens a new launcher tab with that project selected. On the launcher’s default page, the inline project picker and **Change** set the folder for the next start. A split pane has no project or folder control: its chat uses the tab’s project and starts in a neighbouring session’s folder.
 
-Choosing a project fills its folder unless the current folder is already inside it, such as a worktree. **No project** keeps the current folder. Choosing a folder inside another project follows the deepest matching project on the default page; a split pane keeps its tab’s project. A role with its own working directory uses it unless you explicitly choose a folder with **Change**. Start mission retains its directory field and project hints.
+Choosing a project fills its folder unless the current folder is already inside it, such as a worktree. **No project** keeps the current folder. Choosing a folder inside another project follows the deepest matching project. A role with its own working directory uses it unless you explicitly choose a folder with **Change**. Start mission retains its directory field and project hints.
 
 The CLI can create the same association:
 

@@ -1240,11 +1240,11 @@ fn mission_dialogs_do_not_survive_navigation_or_host_removal() {
                 assert!(workspace.restart_confirm.is_none());
                 assert!(workspace.render_mission_overlays(cx).is_empty());
             });
-            let focus = window
-                .read_with(&cx, |root, _| root.root_focus.clone())
+            window
+                .update(&mut cx, |root, window, cx| {
+                    assert!(root.launcher_search_focused(window, cx))
+                })
                 .unwrap();
-            let mut visual = VisualTestContext::from_window(window.into(), &cx);
-            visual.update(|window, _| assert!(focus.is_focused(window)));
             for kind in ["rename", "stopMission", "restart"] {
                 assert_eq!(fake.request_count(kind), 0);
             }

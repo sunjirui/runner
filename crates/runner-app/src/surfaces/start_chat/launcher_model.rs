@@ -144,6 +144,49 @@ pub(crate) fn ranked<'a>(
     found
 }
 
+pub(crate) const COMPACT_PADDING: f32 = 8.;
+pub(crate) const COMPACT_SEARCH: f32 = 32.;
+pub(crate) const COMPACT_GAP: f32 = 8.;
+pub(crate) const COMPACT_ROW: f32 = 30.;
+const CARD_CHROME: f32 = 10.;
+const DIVIDER: f32 = 9.;
+
+/// How many ranked and pinned rows a split pane's launcher shows in `height`
+/// (16-px rems): recents give way first, down to one, then the pinned rows,
+/// then the last recent, leaving the search field alone.
+pub(crate) fn fit_rows(height: f32, ranked: usize, pinned: usize) -> (usize, usize) {
+    let fits = |ranked: usize, pinned: usize| {
+        let rows = ranked + pinned;
+        let card = if rows == 0 {
+            0.
+        } else {
+            let divider = if ranked > 0 && pinned > 0 {
+                DIVIDER
+            } else {
+                0.
+            };
+            COMPACT_GAP + CARD_CHROME + COMPACT_ROW * rows as f32 + divider
+        };
+        2. * COMPACT_PADDING + COMPACT_SEARCH + card <= height
+    };
+    let (mut ranked, mut pinned) = (ranked, pinned);
+    while ranked > 1 && !fits(ranked, pinned) {
+        ranked -= 1;
+    }
+    if !fits(ranked, pinned) {
+        pinned = 0;
+    }
+    if !fits(ranked, pinned) {
+        ranked = 0;
+    }
+    (ranked, pinned)
+}
+
+/// Whether a split pane is too short to pad the search field.
+pub(crate) fn search_is_tight(height: f32) -> bool {
+    height < 2. * COMPACT_PADDING + COMPACT_SEARCH
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) enum KeyResult {
     Select(usize),
@@ -265,6 +308,23 @@ mod tests {
             EntryKey::Role("local-role".into())
         );
     }
+    #[test]
+    fn short_panes_drop_recents_to_one_then_pinned_rows_then_the_last_recent() {
+        assert_eq!(fit_rows(250., 4, 1), (4, 1));
+        assert_eq!(fit_rows(225., 4, 1), (4, 1));
+        assert_eq!(fit_rows(224., 4, 1), (3, 1));
+        assert_eq!(fit_rows(160., 4, 1), (1, 1));
+        assert_eq!(fit_rows(120., 4, 1), (1, 0));
+        assert_eq!(fit_rows(96., 4, 1), (1, 0));
+        assert_eq!(fit_rows(95., 4, 1), (0, 0));
+        assert_eq!(fit_rows(30., 4, 1), (0, 0));
+        assert_eq!(fit_rows(96., 0, 1), (0, 1));
+        assert_eq!(fit_rows(95., 0, 1), (0, 0));
+        assert_eq!(fit_rows(200., 2, 0), (2, 0));
+        assert!(!search_is_tight(48.));
+        assert!(search_is_tight(47.));
+    }
+
     #[test]
     fn keys_include_pinned_rows_and_leave_search_digits_as_text() {
         assert_eq!(key_result("down", true, 3, 4, 2), KeyResult::Select(4));

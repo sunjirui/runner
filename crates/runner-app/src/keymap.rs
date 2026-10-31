@@ -955,11 +955,12 @@ fn binding_strings(combo: &KeyCombo) -> Vec<String> {
 }
 
 fn binding_context(entry: &KeymapEntry, combo: &KeyCombo) -> Option<&'static str> {
+    let modified =
+        combo.meta || (cfg!(any(windows, target_os = "linux")) && combo == &entry.default);
     match entry.id {
-        "new-chat" | "command-palette" | "page-previous" | "page-next"
-            if combo.meta
-                || (cfg!(any(windows, target_os = "linux")) && combo == &entry.default) =>
-        {
+        // The launcher's search is focused on every Start page.
+        "command-palette" if modified => Some("!(TextInput && !LauncherSearch) && !Settings"),
+        "new-chat" | "command-palette" | "page-previous" | "page-next" if modified => {
             Some("!TextInput && !Settings")
         }
         "new-chat" | "command-palette" | "page-previous" | "page-next" => {
@@ -1911,7 +1912,11 @@ mod tests {
             let entry = entry(id).unwrap();
             assert_eq!(
                 binding_context(entry, &entry.default),
-                Some("!TextInput && !Settings")
+                Some(if id == "command-palette" {
+                    "!(TextInput && !LauncherSearch) && !Settings"
+                } else {
+                    "!TextInput && !Settings"
+                })
             );
             let user_combo = key_combo("KeyP", false, true, false, false, None, false);
             let overrides = KeymapOverrides::from([(id.into(), Some(user_combo.clone()))]);
@@ -1921,6 +1926,23 @@ mod tests {
                 binding_context(entry, &user_combo),
                 Some("!TextInput && !Settings && !Terminal")
             );
+        }
+        let palette = entry("command-palette").unwrap();
+        let predicate = gpui::KeyBindingContextPredicate::parse(
+            binding_context(palette, &palette.default).unwrap(),
+        )
+        .unwrap();
+        for (stack, opens) in [
+            (&["Root"][..], true),
+            (&["Root", "LauncherSearch", "TextInput"][..], true),
+            (&["Root", "TextInput"][..], false),
+            (&["Root", "Settings", "TextInput"][..], false),
+        ] {
+            let contexts = stack
+                .iter()
+                .map(|context| gpui::KeyContext::parse(context).unwrap())
+                .collect::<Vec<_>>();
+            assert_eq!(predicate.eval(&contexts), opens, "{stack:?}");
         }
     }
 

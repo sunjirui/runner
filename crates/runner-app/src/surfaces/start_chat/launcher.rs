@@ -5,7 +5,7 @@ use crate::surfaces::front_page::{
     client::{ChatLaunch, ChatStart},
     FrontPageClient, FrontPageTarget,
 };
-use gpui::{Render, SharedString, WeakEntity};
+use gpui::{canvas, Render, SharedString, WeakEntity};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum Choice {
@@ -34,7 +34,7 @@ pub(crate) struct ChatLauncher {
     initial_project: Option<String>,
     cwd: Entity<TextField>,
     changed_directory: bool,
-    neighbour: Option<String>,
+    height: Option<f32>,
     query: Entity<TextField>,
     selected: usize,
     runtimes: Vec<RuntimeChoice>,
@@ -206,9 +206,6 @@ impl ChatLauncher {
                 })
             })
             .flatten();
-        let neighbour = sibling
-            .and_then(|id| root.front_page_session(id, cx))
-            .map(|session| session.label(None));
         let (runtimes, roles, choices, default_runtime, cwd_value, error) = if remote {
             (
                 Vec::new(),
@@ -272,15 +269,7 @@ impl ChatLauncher {
             scope.clone(),
             locked,
             Rc::new(move |id, _, cx| {
-                let _ = project_owner.update(cx, |this, cx| {
-                    let current = this.cwd.read(cx).text().to_owned();
-                    if let Some(path) = this.project.choose(&id, &current) {
-                        this.cwd.update(cx, |input, cx| input.reset(path, cx));
-                    }
-                    this.changed_directory = false;
-                    this.neighbour = None;
-                    cx.notify();
-                });
+                let _ = project_owner.update(cx, |this, cx| this.choose_project(&id, cx));
             }),
             cx,
         );
@@ -291,13 +280,7 @@ impl ChatLauncher {
             this.selected = 0;
             cx.notify();
         });
-        if root.front_page_is_chat()
-            && !root.create_modal_open()
-            && pane.as_ref().is_none_or(|pane| {
-                root.front_page_layout()
-                    .is_some_and(|layout| layout.focused_pane_id == pane.pane_id)
-            })
-        {
+        if claims_focus(root, pane.as_ref()) {
             query.read(cx).focus_handle().focus(window, cx);
         }
         let app_data_dir = root.app_store.read(cx).app_data_dir.clone();
@@ -313,7 +296,7 @@ impl ChatLauncher {
             initial_project: scope,
             cwd,
             changed_directory: false,
-            neighbour,
+            height: None,
             query,
             selected: 0,
             runtimes,
@@ -371,15 +354,7 @@ impl ChatLauncher {
                             this.initial_project.clone(),
                             this.pane.is_some() && !this.default_page,
                             Rc::new(move |id, _, cx| {
-                                let _ = owner.update(cx, |this, cx| {
-                                    let current = this.cwd.read(cx).text().to_owned();
-                                    if let Some(path) = this.project.choose(&id, &current) {
-                                        this.cwd.update(cx, |input, cx| input.reset(path, cx));
-                                    }
-                                    this.changed_directory = false;
-                                    this.neighbour = None;
-                                    cx.notify();
-                                });
+                                let _ = owner.update(cx, |this, cx| this.choose_project(&id, cx));
                             }),
                             cx,
                         );
@@ -422,7 +397,6 @@ impl ChatLauncher {
                                 &picker,
                                 |this, _, _: &FolderChosen, cx| {
                                     this.changed_directory = true;
-                                    this.neighbour = None;
                                     let path = this.cwd.read(cx).text().to_owned();
                                     this.project.picked(&path, cx);
                                     cx.notify();
@@ -439,7 +413,7 @@ impl ChatLauncher {
         .detach();
     }
 
-    fn rows(&self, cx: &App) -> (Vec<Row>, usize, usize) {
+    fn rows(&self, cx: &App) -> (Vec<Row>, usize) {
         let mut entries = Vec::new();
         let chat = self.client.supports(&["catalog", "startChat", "layout"]);
         if chat {
@@ -464,10 +438,6 @@ impl ChatLauncher {
         let total = entries.len();
         let recent = self.recents.entries(&computer_key(&self.client.target));
         let query = self.query.read(cx).text();
-        let matching = entries
-            .iter()
-            .filter(|entry| model::match_rank(entry, query).is_some())
-            .count();
         let mut rows = model::ranked(&entries, recent, &self.default_runtime, query)
             .into_iter()
             .map(|entry| {
@@ -543,7 +513,17 @@ impl ChatLauncher {
                 previously_used: false,
             });
         }
-        (rows, total, matching)
+        if let (false, Some(height)) = (self.default_page, self.height) {
+            let ranked = rows
+                .iter()
+                .filter(|row| matches!(row.choice, Choice::Chat(_)))
+                .count();
+            let (keep_ranked, keep_pinned) = model::fit_rows(height, ranked, rows.len() - ranked);
+            let pinned = rows.split_off(ranked);
+            rows.truncate(keep_ranked);
+            rows.extend(pinned.into_iter().take(keep_pinned));
+        }
+        (rows, total)
     }
 
     fn on_key(
@@ -559,7 +539,7 @@ impl ChatLauncher {
         {
             return false;
         }
-        let (rows, _, _) = self.rows(cx);
+        let (rows, _) = self.rows(cx);
         let ranked = rows
             .iter()
             .filter(|row| matches!(row.choice, Choice::Chat(_)))
@@ -641,6 +621,15 @@ impl ChatLauncher {
         cx.notify();
     }
 
+    fn choose_project(&mut self, id: &str, cx: &mut Context<Self>) {
+        let current = self.cwd.read(cx).text().to_owned();
+        if let Some(path) = self.project.choose(id, &current) {
+            self.cwd.update(cx, |input, cx| input.reset(path, cx));
+        }
+        self.changed_directory = false;
+        cx.notify();
+    }
+
     fn change_directory(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.pending.is_some() {
             return;
@@ -668,7 +657,6 @@ impl ChatLauncher {
                             this.project.picked(&path, cx);
                             this.cwd.update(cx, |input, cx| input.reset(path, cx));
                             this.changed_directory = true;
-                            this.neighbour = None;
                         }
                     }
                     Ok(Ok(None)) => {}
@@ -679,6 +667,15 @@ impl ChatLauncher {
         })
         .detach();
     }
+}
+
+fn claims_focus(root: &NativeRoot, pane: Option<&PaneKey>) -> bool {
+    root.front_page_is_chat()
+        && !root.create_modal_open()
+        && pane.is_none_or(|pane| {
+            root.front_page_layout()
+                .is_some_and(|layout| layout.focused_pane_id == pane.pane_id)
+        })
 }
 
 fn highlighted(name: &str, query: &str) -> AnyElement {
@@ -736,8 +733,21 @@ fn last_use(timestamp: Option<i64>) -> String {
 }
 
 impl Render for ChatLauncher {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let (rows, total, matching) = self.rows(cx);
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // Opening a tab or closing a dialog parks focus on the window or tab, where the
+        // launcher's keys never arrive.
+        let reclaim = self.pending.is_none()
+            && self.root.upgrade().is_some_and(|root| {
+                let root = root.read(cx);
+                window
+                    .focused(cx)
+                    .is_none_or(|focus| focus == root.root_focus || focus == root.chat_focus)
+                    && claims_focus(root, self.pane.as_ref())
+            });
+        if reclaim {
+            self.focus(window, cx);
+        }
+        let (rows, total) = self.rows(cx);
         let query = self.query.read(cx).text().to_owned();
         self.selected = self.selected.min(rows.len().saturating_sub(1));
         let ranked_count = rows
@@ -745,6 +755,9 @@ impl Render for ChatLauncher {
             .filter(|row| matches!(row.choice, Choice::Chat(_)))
             .count();
         let overrides = self.keymap_overrides.clone();
+        let split = !self.default_page;
+        let hide_card = split && rows.is_empty() && !self.loading && total > 0;
+        let tight = split && self.height.is_some_and(model::search_is_tight);
         let mut card = div()
             .flex()
             .flex_col()
@@ -753,24 +766,6 @@ impl Render for ChatLauncher {
             .border_1()
             .border_color(theme::border())
             .bg(theme::panel());
-        card = card.child(
-            div()
-                .px(rems(10. / 16.))
-                .py(rems(8. / 16.))
-                .text_size(rems(11. / 16.))
-                .text_color(theme::muted())
-                .child(if query.is_empty() {
-                    crate::i18n::text("launcher.recent").to_owned()
-                } else {
-                    crate::i18n::tf(
-                        "launcher.result_count",
-                        &[
-                            ("count", matching.to_string()),
-                            ("total", total.to_string()),
-                        ],
-                    )
-                }),
-        );
         if self.loading {
             card = card.child(div().p_3().child(crate::i18n::text("ui.loading")));
         }
@@ -803,6 +798,11 @@ impl Render for ChatLauncher {
             }
             let selected = index == self.selected;
             let pending = self.pending.as_ref() == Some(&row.choice);
+            let badge_width = if matches!(row.choice, Choice::Chat(_)) {
+                18.
+            } else {
+                40.
+            };
             let badge = match row.choice {
                 Choice::Chat(_) => query.is_empty().then(|| (index + 1).to_string()),
                 Choice::Terminal => keymap::effective_binding("new-terminal", &overrides)
@@ -810,13 +810,14 @@ impl Render for ChatLauncher {
                 Choice::Mission => keymap::effective_binding("new-mission", &overrides)
                     .map(|key| keymap::format_combo(&key)),
             };
+            let mark_size = 20.;
             let mark = if let Some(seed) = row.avatar {
-                RoleAvatar::new(seed, 24.).into_any_element()
+                RoleAvatar::new(seed, mark_size).into_any_element()
             } else if let Some(runtime) = &row.runtime {
-                runtime_mark(runtime, 24.)
+                runtime_mark(runtime, mark_size)
             } else {
                 div()
-                    .size(rems(24. / 16.))
+                    .size(rems(mark_size / 16.))
                     .rounded(rems(5. / 16.))
                     .bg(theme::raised())
                     .flex()
@@ -829,7 +830,7 @@ impl Render for ChatLauncher {
                             } else {
                                 "users.svg"
                             })
-                            .size(rems(1.))
+                            .size(rems((mark_size - 8.) / 16.))
                             .text_color(theme::muted()),
                     )
                     .into_any_element()
@@ -840,12 +841,12 @@ impl Render for ChatLauncher {
                 div()
                     .id(SharedString::from(format!("launcher-row-{index}")))
                     .debug_selector(move || format!("LAUNCHER_ROW:{index}"))
-                    .min_h(rems(40. / 16.))
+                    .min_h(rems(model::COMPACT_ROW / 16.))
                     .px(rems(10. / 16.))
-                    .py(rems(6. / 16.))
+                    .py(rems(4. / 16.))
                     .flex()
                     .items_center()
-                    .gap(rems(10. / 16.))
+                    .gap(rems(8. / 16.))
                     .rounded(rems(6. / 16.))
                     .when(selected, |row| row.bg(theme::sidebar_selected()))
                     .when(unavailable, |row| row.opacity(0.45))
@@ -855,7 +856,10 @@ impl Render for ChatLauncher {
                         div()
                             .debug_selector(move || format!("LAUNCHER_BADGE:{index}"))
                             .flex_none()
-                            .min_w(rems(18. / 16.))
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .min_w(rems(badge_width / 16.))
                             .px(rems(4. / 16.))
                             .py(rems(2. / 16.))
                             .rounded(rems(4. / 16.))
@@ -911,14 +915,50 @@ impl Render for ChatLauncher {
                     })),
             );
         }
-        let title = self
-            .project
-            .chosen()
-            .map(|project| {
-                crate::i18n::tf("launcher.start_in", &[("project", project.name.clone())])
-            })
-            .unwrap_or_else(|| crate::i18n::text("launcher.start").into());
-        let path = self.cwd.read(cx).text().to_owned();
+        // A split pane's chat files with its tab and starts in its neighbour's folder.
+        let location = (!split).then(|| {
+            let change = div()
+                .id("launcher-change")
+                .relative()
+                .cursor_pointer()
+                .text_size(rems(12. / 16.))
+                .text_color(theme::accent())
+                .child(crate::i18n::text("launcher.change"))
+                .children(
+                    self.folder_picker
+                        .as_ref()
+                        .map(|picker| FolderPicker::anchor(picker.clone())),
+                )
+                .on_click(cx.listener(|this, _, window, cx| this.change_directory(window, cx)));
+            div()
+                .debug_selector(|| "LAUNCHER_LOCATION".into())
+                .h(rems(20. / 16.))
+                .flex_none()
+                .min_w(px(0.))
+                .flex()
+                .items_center()
+                .gap_2()
+                .child(
+                    svg()
+                        .path("folder.svg")
+                        .debug_selector(|| "LAUNCHER_LOCATION_FOLDER".into())
+                        .size(rems(1.))
+                        .text_color(theme::muted()),
+                )
+                .child(div().max_w(rems(140. / 16.)).child(self.project.select()))
+                .child(
+                    div()
+                        .flex_1()
+                        .min_w(px(0.))
+                        .truncate()
+                        .font_family(theme::UI_MONOSPACE_FONT)
+                        .text_size(rems(11. / 16.))
+                        .text_color(theme::faint())
+                        .child(self.cwd.read(cx).text().to_owned()),
+                )
+                .child(change)
+        });
+        let launcher = cx.entity().downgrade();
         div()
             .debug_selector({
                 let default_page = self.default_page;
@@ -938,13 +978,23 @@ impl Render for ChatLauncher {
                     window.prevent_default();
                 }
             }))
+            .relative()
             .flex_1()
             .min_h(px(0.))
             .min_w(px(0.))
             .flex()
             .items_center()
             .justify_center()
-            .p(rems(20. / 16.))
+            .px(rems(20. / 16.))
+            .py(rems(
+                if tight {
+                    0.
+                } else if split {
+                    model::COMPACT_PADDING
+                } else {
+                    20.
+                } / 16.,
+            ))
             .overflow_hidden()
             .bg(theme::bg())
             .child(
@@ -958,19 +1008,12 @@ impl Render for ChatLauncher {
                     .min_w(px(0.))
                     .flex()
                     .flex_col()
-                    .gap(rems(12. / 16.))
-                    .when(self.default_page, |column| {
-                        column.child(
-                            div()
-                                .text_size(rems(21. / 16.))
-                                .font_weight(FontWeight::SEMIBOLD)
-                                .child(title),
-                        )
-                    })
+                    .gap(rems(if split { model::COMPACT_GAP } else { 12. } / 16.))
                     .child(
                         div()
-                            .h(rems(38. / 16.))
+                            .h(rems(model::COMPACT_SEARCH / 16.))
                             .debug_selector(|| "LAUNCHER_SEARCH".into())
+                            .key_context("LauncherSearch")
                             .on_mouse_down(
                                 MouseButton::Left,
                                 cx.listener(|this, _, window, cx| {
@@ -994,76 +1037,33 @@ impl Render for ChatLauncher {
                             )
                             .child(div().flex_1().min_w(px(0.)).child(self.query.clone())),
                     )
-                    .child(
-                        div()
-                            .debug_selector(|| "LAUNCHER_LOCATION".into())
-                            .h(rems(20. / 16.))
-                            .flex_none()
-                            .min_w(px(0.))
-                            .flex()
-                            .items_center()
-                            .gap_2()
-                            .child(
-                                svg()
-                                    .path("folder.svg")
-                                    .debug_selector(|| "LAUNCHER_LOCATION_FOLDER".into())
-                                    .size(rems(1.))
-                                    .text_color(theme::muted()),
-                            )
-                            .when(self.default_page, |row| {
-                                row.child(
-                                    div().max_w(rems(140. / 16.)).child(self.project.select()),
-                                )
-                            })
-                            .child(
-                                div()
-                                    .flex_1()
-                                    .min_w(px(0.))
-                                    .truncate()
-                                    .font_family(theme::UI_MONOSPACE_FONT)
-                                    .text_size(rems(11. / 16.))
-                                    .text_color(theme::faint())
-                                    .child(path)
-                                    .children(self.neighbour.as_ref().map(|name| {
-                                        format!(
-                                            " · {}",
-                                            crate::i18n::tf(
-                                                "launcher.same_as",
-                                                &[("name", name.clone())]
-                                            )
-                                        )
-                                    })),
-                            )
-                            .child(
-                                div()
-                                    .id("launcher-change")
-                                    .relative()
-                                    .cursor_pointer()
-                                    .text_size(rems(12. / 16.))
-                                    .text_color(theme::accent())
-                                    .child(crate::i18n::text("launcher.change"))
-                                    .children(
-                                        self.folder_picker
-                                            .as_ref()
-                                            .map(|picker| FolderPicker::anchor(picker.clone())),
-                                    )
-                                    .on_click(cx.listener(|this, _, window, cx| {
-                                        this.change_directory(window, cx)
-                                    })),
-                            ),
-                    )
+                    .children(location)
                     .children(self.error.as_ref().map(|error| {
                         runner_app::ui::notice_banner(error.clone(), runner_app::ui::Tone::Danger)
                     }))
-                    .child(card)
-                    .child(
-                        div()
-                            .text_size(rems(11. / 16.))
-                            .text_color(theme::muted())
-                            .child(crate::i18n::text("launcher.hint")),
-                    ),
+                    .when(!hide_card, |column| column.child(card)),
             )
             .children(self.folder_picker.clone())
+            .child(
+                canvas(
+                    |_, _, _| {},
+                    move |bounds, _, window, cx| {
+                        let height =
+                            f32::from(bounds.size.height) / f32::from(window.rem_size()) * 16.;
+                        // A notify while the frame is painting would not schedule the next one.
+                        cx.defer(move |cx| {
+                            let _ = launcher.update(cx, |launcher, cx| {
+                                if launcher.height != Some(height) {
+                                    launcher.height = Some(height);
+                                    cx.notify();
+                                }
+                            });
+                        });
+                    },
+                )
+                .absolute()
+                .inset_0(),
+            )
     }
 }
 
@@ -1343,7 +1343,6 @@ impl NativeRoot {
                             .cwd
                             .update(cx, |field, cx| field.reset(directory, cx));
                         launcher.changed_directory = true;
-                        launcher.neighbour = None;
                     }
                 });
                 self.launchers.insert(key, next.clone());
@@ -1718,6 +1717,17 @@ impl NativeRoot {
 
 #[cfg(test)]
 impl NativeRoot {
+    pub(crate) fn launcher_search_focused(&self, window: &Window, cx: &App) -> bool {
+        self.launchers.values().any(|launcher| {
+            launcher
+                .read(cx)
+                .query
+                .read(cx)
+                .focus_handle()
+                .is_focused(window)
+        })
+    }
+
     pub(crate) fn open_pane_chat_modal(
         &mut self,
         pane_id: &str,
@@ -1735,7 +1745,7 @@ impl NativeRoot {
         let launcher =
             self.render_launcher(Some(pane), layout.root.leaves().len() == 1, window, cx);
         let (key, scope, cwd) = launcher.update(cx, |launcher, cx| {
-            let (rows, _, _) = launcher.rows(cx);
+            let (rows, _) = launcher.rows(cx);
             let row = &rows[0];
             let Choice::Chat(key) = &row.choice else {
                 panic!("expected a chat row");
@@ -2317,6 +2327,117 @@ mod tests {
     }
 
     #[test]
+    fn launcher_takes_focus_back_from_the_window_and_tab_so_arrows_move_the_selection() {
+        for tab in [false, true] {
+            let mut harness =
+                modal_harness(1200., 1000., Vec::new(), Vec::new(), ChatMode::Runtime);
+            let mut launcher = None;
+            harness.act(|root, window, cx| {
+                root.start_chat_modal = None;
+                root.set_route(AppRoute::Chat, cx);
+                if tab {
+                    root.open_new_tab_modal(&NewTab, window, cx);
+                }
+                let pane = root
+                    .front_page_layout()
+                    .map(|layout| PaneKey::new(&layout.id, &layout.focused_pane_id));
+                let view = root.render_launcher(pane, true, window, cx);
+                view.update(cx, |launcher, _| {
+                    launcher.runtimes = vec![agent()];
+                    launcher.roles = vec![role()];
+                });
+                if tab {
+                    root.chat_focus.focus(window, cx);
+                } else {
+                    root.root_focus.focus(window, cx);
+                }
+                launcher = Some(view);
+            });
+            harness.visual.run_until_parked();
+            for (keys, expected) in [("down", 1), ("down", 2), ("up up", 0), ("up", usize::MAX)] {
+                harness.visual.simulate_keystrokes(keys);
+                harness.visual.run_until_parked();
+                harness.act(|_, _, cx| {
+                    let launcher = launcher.as_ref().unwrap().read(cx);
+                    assert_eq!(
+                        launcher.selected,
+                        expected.min(launcher.rows(cx).0.len() - 1),
+                        "after {keys} with the {} focused",
+                        if tab { "tab" } else { "window" }
+                    )
+                });
+            }
+        }
+    }
+
+    #[test]
+    fn clicking_the_sidebar_search_keeps_launcher_keys_after_the_palette_closes() {
+        let mut harness = modal_harness(1200., 1000., Vec::new(), Vec::new(), ChatMode::Runtime);
+        let mut launcher = None;
+        harness.act(|root, window, cx| {
+            root.start_chat_modal = None;
+            root.set_route(AppRoute::Chat, cx);
+            root.open_new_tab_modal(&NewTab, window, cx);
+            let layout = root.front_page_layout().unwrap().clone();
+            let pane = PaneKey::new(&layout.id, &layout.focused_pane_id);
+            let view = root.render_launcher(Some(pane), true, window, cx);
+            view.update(cx, |launcher, cx| {
+                launcher.runtimes = vec![agent()];
+                launcher.roles = vec![role()];
+                launcher.focus(window, cx);
+            });
+            launcher = Some(view);
+        });
+        harness.visual.run_until_parked();
+        let search = harness.visual.debug_bounds("SIDEBAR_SEARCH").unwrap();
+        harness
+            .visual
+            .simulate_click(search.center(), gpui::Modifiers::default());
+        harness.visual.run_until_parked();
+        harness.visual.simulate_keystrokes("escape");
+        harness.visual.run_until_parked();
+        harness.visual.simulate_keystrokes("down");
+        harness.visual.run_until_parked();
+        harness.act(|_, window, cx| {
+            let launcher = launcher.as_ref().unwrap().read(cx);
+            assert!(launcher.query.read(cx).focus_handle().is_focused(window));
+            assert_eq!(launcher.selected, 1);
+        });
+    }
+
+    #[test]
+    fn command_palette_opens_from_the_launcher_search_and_returns_to_it() {
+        let mut harness = modal_harness(1200., 1000., Vec::new(), Vec::new(), ChatMode::Runtime);
+        let mut launcher = None;
+        harness.act(|root, window, cx| {
+            root.start_chat_modal = None;
+            root.set_route(AppRoute::Chat, cx);
+            root.open_new_tab_modal(&NewTab, window, cx);
+            let layout = root.front_page_layout().unwrap().clone();
+            let pane = PaneKey::new(&layout.id, &layout.focused_pane_id);
+            let view = root.render_launcher(Some(pane), true, window, cx);
+            view.update(cx, |launcher, cx| launcher.focus(window, cx));
+            launcher = Some(view);
+        });
+        harness.visual.run_until_parked();
+        for (keys, focused) in [
+            (keymap::platform_default("cmd-k"), false),
+            ("escape".to_owned(), true),
+        ] {
+            harness.visual.simulate_keystrokes(&keys);
+            harness.visual.run_until_parked();
+            harness.act(|_, window, cx| {
+                let launcher = launcher.as_ref().unwrap().read(cx);
+                assert_eq!(
+                    launcher.query.read(cx).focus_handle().is_focused(window),
+                    focused,
+                    "after {keys}"
+                );
+            });
+        }
+    }
+
+    #[test]
     fn clicking_search_after_a_directory_picker_keeps_launcher_keys_active() {
         let mut harness = modal_harness(1200., 1000., Vec::new(), Vec::new(), ChatMode::Runtime);
         let chosen = tempfile::tempdir().unwrap();
@@ -2473,14 +2594,102 @@ mod tests {
             .visual
             .debug_bounds("STYLED_SELECT_TRIGGER_LEADING")
             .is_none());
-        assert!(harness
-            .visual
-            .debug_bounds("LAUNCHER_LOCATION_FOLDER")
-            .is_some());
+        assert!(harness.visual.debug_bounds("LAUNCHER_LOCATION").is_none());
+        assert!(
+            harness.visual.debug_bounds("LAUNCHER_SEARCH").is_some(),
+            "a split pane shows its search field with no project or folder control"
+        );
     }
 
     #[test]
-    fn capability_hiding_and_search_counts_keep_pinned_rows_out_of_ranking() {
+    fn a_short_split_measures_its_launcher_and_drops_recents_to_fit() {
+        let mut harness = modal_harness(1200., 440., Vec::new(), Vec::new(), ChatMode::Runtime);
+        let mut launcher = None;
+        harness.act(|root, window, cx| {
+            root.start_chat_modal = None;
+            root.set_route(AppRoute::Chat, cx);
+            root.open_new_tab_modal(&NewTab, window, cx);
+            let first = root.front_page_layout().unwrap().focused_pane_id.clone();
+            root.split_pane(&first, SplitOrientation::Column, window, cx);
+            let layout = root.front_page_layout().unwrap().clone();
+            let pane = PaneKey::new(&layout.id, &layout.focused_pane_id);
+            let view = root.render_launcher(Some(pane), false, window, cx);
+            view.update(cx, |launcher, _| {
+                launcher.runtimes = vec![agent()];
+                launcher.roles = (1..=4)
+                    .map(|n| RoleChoice {
+                        id: format!("role-{n}"),
+                        display_name: format!("Role {n}"),
+                        ..role()
+                    })
+                    .collect();
+            });
+            launcher = Some(view);
+        });
+        harness.visual.run_until_parked();
+        harness.act(|_, _, cx| {
+            let launcher = launcher.as_ref().unwrap().read(cx);
+            let height = launcher.height.expect("the launcher measures its pane");
+            let rows = launcher.rows(cx).0;
+            let ranked = rows
+                .iter()
+                .filter(|row| matches!(row.choice, Choice::Chat(_)))
+                .count();
+            assert!(height < 225., "the split is short: {height}");
+            assert!((1..4).contains(&ranked), "{ranked} recents in {height}");
+            assert_eq!((ranked, rows.len() - ranked), model::fit_rows(height, 4, 1));
+        });
+        harness.act(|root, _, cx| {
+            let layout = root.tabs.active_mut().unwrap();
+            let focused = layout.focused_pane_id.clone();
+            let runner_core::pane_layout::PaneNode::Split(split) = &layout.root else {
+                panic!("a split tab");
+            };
+            let sizes = if split.a.leaves()[0].id == focused {
+                [15., 85.]
+            } else {
+                [85., 15.]
+            };
+            let id = split.id.clone();
+            assert!(layout.set_split_sizes(&id, sizes));
+            cx.notify();
+        });
+        harness.visual.run_until_parked();
+        harness.act(|_, _, cx| {
+            let launcher = launcher.as_ref().unwrap().read(cx);
+            let height = launcher.height.unwrap();
+            assert!(
+                model::search_is_tight(height),
+                "the divider at its 15% limit: {height}"
+            );
+            assert!(launcher.rows(cx).0.is_empty());
+        });
+        harness.act(|root, _, cx| {
+            let layout = root.tabs.active_mut().unwrap();
+            let runner_core::pane_layout::PaneNode::Split(split) = &layout.root else {
+                panic!("a split tab");
+            };
+            let id = split.id.clone();
+            assert!(layout.set_split_sizes(&id, [50., 50.]));
+            cx.notify();
+        });
+        harness
+            .visual
+            .simulate_resize(gpui::size(px(1200.), px(240.)));
+        harness.visual.run_until_parked();
+        harness.act(|_, _, cx| {
+            let launcher = launcher.as_ref().unwrap().read(cx);
+            let height = launcher.height.unwrap();
+            assert!(height < 95., "a window shrunk after the split: {height}");
+            assert!(
+                launcher.rows(cx).0.is_empty(),
+                "below one row only the search field is left in {height}"
+            );
+        });
+    }
+
+    #[test]
+    fn capability_hiding_keeps_pinned_rows_out_of_ranking() {
         let mut harness = modal_harness(1200., 1000., Vec::new(), Vec::new(), ChatMode::Runtime);
         harness.act(|root, window, cx| {
             root.start_chat_modal = None;
@@ -2512,9 +2721,8 @@ mod tests {
                 launcher
                     .query
                     .update(cx, |query, cx| query.reset("Role", cx));
-                let (rows, total, matches) = launcher.rows(cx);
+                let (rows, total) = launcher.rows(cx);
                 assert_eq!(total, 7);
-                assert_eq!(matches, 6);
                 assert_eq!(rows.len(), 6);
                 assert_eq!(rows[4].choice, Choice::Terminal);
                 assert_eq!(rows[5].choice, Choice::Mission);
