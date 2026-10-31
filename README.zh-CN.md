@@ -32,7 +32,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/hero.png" alt="Runner 起始页 — 在同一个工作区新建聊天、终端或 crew mission" width="100%" />
+  <img src="assets/hero.png" alt="Runner 起始页 — 一个启动器启动最近用过的 agent 和角色、终端或 crew mission" width="100%" />
 </p>
 
 <p align="center">
@@ -71,7 +71,7 @@ Runner 让命令行编码 agent 通过可复用的 crew、真实终端和共享 
   </tr>
   <tr>
     <td width="50%" valign="middle">
-      <a href="assets/mission_feed.png"><img src="assets/mission_feed.png" alt="mission feed 中 coder、reviewer 和 QA 在协作，一个问题正等待你回答" width="100%" /></a>
+      <a href="assets/mission_feed.png"><img src="assets/mission_feed.png" alt="mission feed 中的目标和 coder 交给 reviewer 的评审请求，旁边是 crew 的会话卡片" width="100%" /></a>
     </td>
     <td width="50%" valign="middle">
       <h3>Mission 与协作</h3>
@@ -90,16 +90,16 @@ Runner 让命令行编码 agent 通过可复用的 crew、真实终端和共享 
   </tr>
   <tr>
     <td width="50%" valign="middle">
-      <a href="assets/mission_terminal.png"><img src="assets/mission_terminal.png" alt="mission 里一个槽位自己的终端：coder 的 Codex 会话，旁边是 crew 的会话卡片" width="100%" /></a>
+      <a href="assets/mission_terminal.png"><img src="assets/mission_terminal.png" alt="mission 里一个槽位自己的终端：coder 的 Claude Code 会话，旁边是 crew 的会话卡片" width="100%" /></a>
     </td>
     <td width="50%" valign="middle">
       <h3>真实终端</h3>
-      <p>每个 agent 都在真实 PTY 里保留自己的 TUI，跑在 GPU 绘制的 <code>alacritty_terminal</code> 网格上：鼠标上报、输入法（包括拼音）、文件路径粘贴和点击打开，每个 chat 和 mission 下面还有一个终端抽屉。</p>
+      <p>每个 agent 都在真实 PTY 里保留自己的 TUI，跑在 GPU 绘制的 <code>alacritty_terminal</code> 网格上：鼠标上报、输入法（包括拼音）、文件路径粘贴和点击打开，每个 mission 下面还有一个终端抽屉。</p>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="middle">
-      <a href="assets/chat_split.png"><img src="assets/chat_split.png" alt="一个标签页分成四栏：Codex、Claude Code、Antigravity CLI 和 pi 并排运行" width="100%" /></a>
+      <a href="assets/chat_split.png"><img src="assets/chat_split.png" alt="一个标签页分成四栏：Codex、Claude Code、Grok 和 pi，每栏各自是一个岛屿" width="100%" /></a>
     </td>
     <td width="50%" valign="middle">
       <h3>分栏与多窗口</h3>

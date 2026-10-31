@@ -32,7 +32,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/hero.png" alt="Runner start screen — start a new chat, terminal or crew mission from one workspace" width="100%" />
+  <img src="assets/hero.png" alt="Runner start page — one launcher for your recent agents and roles, a terminal or a crew mission" width="100%" />
 </p>
 
 <p align="center">
@@ -71,7 +71,7 @@ Runner brings CLI coding agents together in reusable crews, with real terminals 
   </tr>
   <tr>
     <td width="50%" valign="middle">
-      <a href="assets/mission_feed.png"><img src="assets/mission_feed.png" alt="A mission feed with coder, reviewer and QA coordinating, and a question waiting for your input" width="100%" /></a>
+      <a href="assets/mission_feed.png"><img src="assets/mission_feed.png" alt="A mission feed with the goal and the coder's review handoff to the reviewer, beside the crew's session cards" width="100%" /></a>
     </td>
     <td width="50%" valign="middle">
       <h3>Missions and coordination</h3>
@@ -90,16 +90,16 @@ Runner brings CLI coding agents together in reusable crews, with real terminals 
   </tr>
   <tr>
     <td width="50%" valign="middle">
-      <a href="assets/mission_terminal.png"><img src="assets/mission_terminal.png" alt="A mission slot's own terminal: the coder's Codex session, beside the crew's session cards" width="100%" /></a>
+      <a href="assets/mission_terminal.png"><img src="assets/mission_terminal.png" alt="A mission slot's own terminal: the coder's Claude Code session, beside the crew's session cards" width="100%" /></a>
     </td>
     <td width="50%" valign="middle">
       <h3>Real terminals</h3>
-      <p>Each agent keeps its own TUI in a real PTY on a GPU-drawn <code>alacritty_terminal</code> grid, with mouse reporting, IME input (Pinyin included), file-path paste and click-to-open, and a shell drawer beneath every chat and mission.</p>
+      <p>Each agent keeps its own TUI in a real PTY on a GPU-drawn <code>alacritty_terminal</code> grid, with mouse reporting, IME input (Pinyin included), file-path paste and click-to-open, and a shell drawer beneath every mission.</p>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="middle">
-      <a href="assets/chat_split.png"><img src="assets/chat_split.png" alt="One tab split four ways: Codex, Claude Code, Antigravity CLI and pi side by side" width="100%" /></a>
+      <a href="assets/chat_split.png"><img src="assets/chat_split.png" alt="One tab split four ways: Codex, Claude Code, Grok and pi, each pane in its own island" width="100%" /></a>
     </td>
     <td width="50%" valign="middle">
       <h3>Split tabs and windows</h3>
