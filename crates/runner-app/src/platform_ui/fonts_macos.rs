@@ -13,3 +13,5 @@ pub const APP_FONT_FALLBACKS: &[&str] = &[
     "sans-serif",
 ];
 pub const TERMINAL_FONT_FALLBACKS: &[&str] = &["Microsoft YaHei", "sans-serif"];
+// CoreText's cascade already serves U+23FA from monochrome STIX Two Math.
+pub const TERMINAL_SYMBOL_FALLBACKS: &[&str] = &[];
