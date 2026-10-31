@@ -123,7 +123,7 @@ impl NativeRoot {
                         |drag: &PaneDrag, _, _, cx: &mut App| cx.new(|_| drag.clone()),
                     )
                 });
-            let identity = if let Some(entry) = entry.as_ref() {
+            let (identity, lifecycle_control) = if let Some(entry) = entry.as_ref() {
                 let session_id = entry.session_id.clone();
                 let live = self
                     .remote_client
@@ -246,10 +246,28 @@ impl NativeRoot {
                             ),
                         )
                     });
+                let lifecycle_control = lifecycle.map(|(action, shortcut)| {
+                    let target = pane_id.clone();
+                    let target_session = entry.session_id.clone();
+                    let root = cx.entity();
+                    div().flex_none().ml_2().mr_1().child(
+                        runner_app::ui::agent_status::pane_lifecycle_control(
+                            SharedString::from(format!("lifecycle-{pane_id}")),
+                            action,
+                            shortcut,
+                            move |window, cx| {
+                                root.update(cx, |this, cx| {
+                                    this.focus_pane(&target, cx);
+                                    this.activate_primary_pane_action(&target_session, window, cx);
+                                });
+                            },
+                            window,
+                            cx,
+                        ),
+                    )
+                });
                 let target = pane_id.clone();
-                let target_session = entry.session_id.clone();
-                let root = cx.entity();
-                gpui::container_query(move |size, window, cx| {
+                let identity = gpui::container_query(move |size, window, cx| {
                     let zoom = f32::from(window.rem_size()) / 16.;
                     let text_width = |text: &str, font_size: f32, weight| {
                         let mut style = window.text_style();
@@ -279,12 +297,7 @@ impl NativeRoot {
                         + 8.
                         + if account.is_some() { 8. } else { 0. }
                         + if status.is_some() { 8. } else { 0. })
-                        * zoom
-                        + if lifecycle.is_some() {
-                            38. * zoom + 1.
-                        } else {
-                            0.
-                        };
+                        * zoom;
                     let budget = (f32::from(size.width) - fixed - 1.).max(0.);
                     let label_width = status
                         .as_ref()
@@ -337,21 +350,10 @@ impl NativeRoot {
                                 .w(px(account_width))
                         }))
                         .children(status.map(|status| {
-                            runner_app::ui::agent_status::pane_status_control(
+                            runner_app::ui::agent_status::pane_status(
                                 status,
                                 (label_visible, detail_visible),
                                 SharedString::from(format!("status-{target}")),
-                                lifecycle,
-                                move |window, cx| {
-                                    root.update(cx, |this, cx| {
-                                        this.focus_pane(&target, cx);
-                                        this.activate_primary_pane_action(
-                                            &target_session,
-                                            window,
-                                            cx,
-                                        );
-                                    });
-                                },
                                 window,
                                 cx,
                             )
@@ -359,23 +361,27 @@ impl NativeRoot {
                 })
                 .flex_1()
                 .min_w(px(0.))
-                .into_any_element()
+                .into_any_element();
+                (identity, lifecycle_control)
             } else {
-                div()
-                    .min_w(px(0.))
-                    .flex_1()
-                    .flex()
-                    .items_center()
-                    .child(mark)
-                    .child(
-                        div()
-                            .ml_2()
-                            .text_size(theme::text_ui())
-                            .font_weight(FontWeight::MEDIUM)
-                            .text_color(theme::faint())
-                            .child(crate::i18n::text("ui.empty")),
-                    )
-                    .into_any_element()
+                (
+                    div()
+                        .min_w(px(0.))
+                        .flex_1()
+                        .flex()
+                        .items_center()
+                        .child(mark)
+                        .child(
+                            div()
+                                .ml_2()
+                                .text_size(theme::text_ui())
+                                .font_weight(FontWeight::MEDIUM)
+                                .text_color(theme::faint())
+                                .child(crate::i18n::text("ui.empty")),
+                        )
+                        .into_any_element(),
+                    None,
+                )
             };
             div()
                 .flex_none()
@@ -397,6 +403,7 @@ impl NativeRoot {
                         .children(self.render_collapsed_titlebar_spacer())
                 })
                 .child(identity)
+                .children(lifecycle_control)
                 .child(
                     div()
                         .flex_none()

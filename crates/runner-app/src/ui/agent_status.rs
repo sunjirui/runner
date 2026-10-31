@@ -1302,36 +1302,41 @@ fn pane_lifecycle_tooltip(
     )
 }
 
-pub fn pane_status_control(
+pub fn pane_status(
     status: StatusPresentation,
     display: (bool, bool),
     id: SharedString,
-    action: Option<(super::SessionControlKind, Option<String>)>,
-    on_press: impl Fn(&mut Window, &mut App) + 'static,
     window: &mut Window,
     cx: &mut App,
 ) -> AnyElement {
     let (label, detail) = display;
     let row_id = id.clone();
-    let row = div()
+    div()
         .id(id.clone())
         .debug_selector(move || format!("PANE_STATUS_ROW:{row_id}"))
         .ml_2()
         .flex_none()
         .flex()
         .items_center()
-        .gap(rems(8. / 16.))
         .child(island_status_indicator(
             status,
             label,
             detail,
-            (ElementId::from(id.clone()), "indicator"),
+            (ElementId::from(id), "indicator"),
             window,
             cx,
-        ));
-    let Some((action, shortcut)) = action else {
-        return row.into_any_element();
-    };
+        ))
+        .into_any_element()
+}
+
+pub fn pane_lifecycle_control(
+    id: SharedString,
+    action: super::SessionControlKind,
+    shortcut: Option<String>,
+    on_press: impl Fn(&mut Window, &mut App) + 'static,
+    window: &mut Window,
+    cx: &mut App,
+) -> AnyElement {
     let state = window.use_keyed_state(
         (ElementId::from(id.clone()), "control-state"),
         cx,
@@ -1446,23 +1451,28 @@ pub fn pane_status_control(
                 key_press(window, cx);
             }
         });
-    row.child(
-        div()
-            .debug_selector(|| "PANE_LIFECYCLE_DIVIDER".into())
-            .flex_none()
-            .w(px(1.))
-            .h(rems(14. / 16.))
-            .bg(theme::border_strong()),
-    )
-    .child(
-        Tooltip::new(
-            (ElementId::from(id), "tooltip"),
-            pane_lifecycle_tooltip(action, shortcut.as_deref()),
-            button,
+    div()
+        .flex_none()
+        .flex()
+        .items_center()
+        .gap_1()
+        .child(
+            Tooltip::new(
+                (ElementId::from(id), "tooltip"),
+                pane_lifecycle_tooltip(action, shortcut.as_deref()),
+                button,
+            )
+            .focus_handle(focus),
         )
-        .focus_handle(focus),
-    )
-    .into_any_element()
+        .child(
+            div()
+                .debug_selector(|| "PANE_LIFECYCLE_DIVIDER".into())
+                .flex_none()
+                .w(px(1.))
+                .h(rems(14. / 16.))
+                .bg(theme::border_strong()),
+        )
+        .into_any_element()
 }
 
 #[cfg(test)]
@@ -1494,26 +1504,29 @@ mod pane_control_tests {
                 .size_full()
                 .flex()
                 .items_start()
-                .child(pane_status_control(
+                .child(pane_status(
                     status,
                     (self.width >= 300., self.details),
                     "probe".into(),
-                    self.action.map(|action| {
-                        (
-                            action,
-                            Some(crate::keymap::fixed_shortcut(
-                                if action == super::super::SessionControlKind::Stop {
-                                    "shift-cmd-x"
-                                } else {
-                                    "shift-cmd-r"
-                                },
-                            )),
-                        )
-                    }),
-                    move |_, _| hits.set(hits.get() + 1),
                     window,
                     cx,
                 ))
+                .children(self.action.map(|action| {
+                    pane_lifecycle_control(
+                        "probe-lifecycle".into(),
+                        action,
+                        Some(crate::keymap::fixed_shortcut(
+                            if action == super::super::SessionControlKind::Stop {
+                                "shift-cmd-x"
+                            } else {
+                                "shift-cmd-r"
+                            },
+                        )),
+                        move |_, _| hits.set(hits.get() + 1),
+                        window,
+                        cx,
+                    )
+                }))
         }
     }
 
@@ -1593,45 +1606,18 @@ mod pane_control_tests {
                         .unwrap();
                     let icon = visual.debug_bounds("PANE_LIFECYCLE_ICON").unwrap();
                     let divider = visual.debug_bounds("PANE_LIFECYCLE_DIVIDER").unwrap();
-                    let status = visual.debug_bounds("ISLAND_STATUS_INDICATOR").unwrap();
                     assert!((button.size.width - px(22. * zoom)).abs() < px(0.5));
                     assert!((button.size.height - px(22. * zoom)).abs() < px(0.5));
                     assert!((icon.size.width - px(13. * zoom)).abs() < px(0.5));
                     assert_eq!(divider.size.width, px(1.));
                     assert!((divider.size.height - px(14. * zoom)).abs() < px(0.5));
-                    assert!((divider.left() - status.right() - px(8. * zoom)).abs() < px(0.5));
-                    assert!((button.left() - divider.right() - px(8. * zoom)).abs() < px(0.5));
+                    assert!((divider.left() - button.right() - px(4. * zoom)).abs() < px(0.5));
                     assert_eq!(
                         visual.debug_bounds("ISLAND_STATUS_LABEL").is_some(),
                         width >= 300.
                     );
                 }
             }
-        }
-    }
-
-    #[test]
-    fn no_lifecycle_action_has_no_button_or_divider() {
-        let _theme = crate::theme_snapshot::ThemeGuard::new();
-        for kind in [
-            StatusKind::Starting,
-            StatusKind::Resuming,
-            StatusKind::Working,
-            StatusKind::Stopped,
-        ] {
-            let mut cx = TestAppContext::single();
-            let host = cx.add_window(|_, _| Harness {
-                hits: Rc::new(Cell::new(0)),
-                action: None,
-                kind,
-                width: 640.,
-                zoom: 1.,
-                details: false,
-            });
-            let mut visual = VisualTestContext::from_window(host.into(), &cx);
-            assert!(visual.debug_bounds("ISLAND_STATUS_INDICATOR").is_some());
-            assert!(visual.debug_bounds("PANE_LIFECYCLE_DIVIDER").is_none());
-            assert!(visual.debug_bounds("PANE_LIFECYCLE_ICON").is_none());
         }
     }
 
