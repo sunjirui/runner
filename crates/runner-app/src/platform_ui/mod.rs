@@ -32,6 +32,13 @@ pub(crate) use windows::{
     SHORTCUT_REQUIREMENTS_KEY,
 };
 
+#[cfg(any(windows, target_os = "linux"))]
+pub(crate) use desktop::titlebar_mouse_down;
+#[cfg(target_os = "macos")]
+pub(crate) use macos::titlebar_mouse_down;
+#[cfg(all(target_os = "macos", test))]
+pub(crate) use macos::{take_titlebar_actions, TitlebarAction};
+
 #[cfg(target_os = "linux")]
 pub mod fonts_linux;
 #[cfg(target_os = "macos")]

@@ -59,24 +59,11 @@ impl MissionWorkspace {
             )
             .on_mouse_down(
                 MouseButton::Left,
-                cx.listener(|this, _, _, _| {
+                cx.listener(|this, event, window, cx| {
                     this.titlebar_drag_armed = true;
+                    platform_ui::titlebar_mouse_down(event, window, cx);
                 }),
             );
-        #[cfg(target_os = "macos")]
-        let area = area
-            .on_mouse_move(cx.listener(|this, _, window, _| {
-                if this.titlebar_drag_armed {
-                    this.titlebar_drag_armed = false;
-                    window.start_window_move();
-                }
-            }))
-            .on_click(|event, window, cx| {
-                if event.click_count() == 2 {
-                    cx.stop_propagation();
-                    window.titlebar_double_click();
-                }
-            });
         area
     }
 

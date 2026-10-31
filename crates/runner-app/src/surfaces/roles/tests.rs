@@ -604,12 +604,20 @@ fn entity_pages_keep_the_sidebar_cluster_when_it_collapses() {
     for route in [
         AppRoute::RoleDetail("page-reviewer".into()),
         AppRoute::Roles,
+        AppRoute::NewRole,
         AppRoute::Crews,
+        AppRoute::NewCrew,
         AppRoute::CrewEditor("crew".into()),
+        AppRoute::ArchivedChat,
+        AppRoute::Settings,
     ] {
-        host.update(&mut page.visual, |root, _, cx| {
+        host.update(&mut page.visual, |root, window, cx| {
             root.set_sidebar_collapsed(true, false, cx);
-            root.route = route.clone();
+            match route {
+                AppRoute::NewRole => root.open_create_role(window, cx),
+                AppRoute::NewCrew => root.open_create_crew(window, cx),
+                _ => root.route = route.clone(),
+            }
             cx.notify();
         })
         .unwrap();
@@ -618,7 +626,14 @@ fn entity_pages_keep_the_sidebar_cluster_when_it_collapses() {
             .visual
             .debug_bounds("WINDOW_TITLEBAR_CONTROLS")
             .unwrap();
-        let chrome = page.visual.debug_bounds("APP_CHROME").unwrap();
+        let chrome = page
+            .visual
+            .debug_bounds(if route == AppRoute::Settings {
+                "SETTINGS_CHROME"
+            } else {
+                "APP_CHROME"
+            })
+            .unwrap();
         let controls_y = chrome.top()
             + px(if cfg!(any(windows, target_os = "linux")) {
                 -16.
@@ -628,6 +643,78 @@ fn entity_pages_keep_the_sidebar_cluster_when_it_collapses() {
         assert_eq!(controls.center().y, controls_y, "{route:?}");
         assert_eq!(controls.size.width, px(92.), "{route:?}");
         assert_eq!(controls.size.height, px(28.), "{route:?}");
+        #[cfg(target_os = "macos")]
+        {
+            let drag = page
+                .visual
+                .debug_bounds(if route == AppRoute::Settings {
+                    "SETTINGS_TITLEBAR_DRAG"
+                } else {
+                    "MAIN_TITLEBAR_DRAG"
+                })
+                .unwrap();
+            let at = gpui::point(drag.right() - px(120.), chrome.top() + px(40.));
+            assert!(
+                drag.contains(&at),
+                "{route:?}: drag area covers the native titlebar band at y=40"
+            );
+            crate::platform_ui::take_titlebar_actions();
+            page.visual.simulate_mouse_down(
+                at,
+                gpui::MouseButton::Left,
+                gpui::Modifiers::default(),
+            );
+            assert_eq!(
+                crate::platform_ui::take_titlebar_actions(),
+                [crate::platform_ui::TitlebarAction::Move],
+                "{route:?}: move starts on mouse-down"
+            );
+            page.visual.simulate_mouse_move(
+                at + gpui::point(px(4.), px(0.)),
+                Some(gpui::MouseButton::Left),
+                gpui::Modifiers::default(),
+            );
+            assert!(
+                crate::platform_ui::take_titlebar_actions().is_empty(),
+                "{route:?}: movement does not start another native drag"
+            );
+            page.visual
+                .simulate_mouse_up(at, gpui::MouseButton::Left, gpui::Modifiers::default());
+            page.visual.run_until_parked();
+            let margin = page.visual.debug_bounds("WINDOW_TOP_MARGIN_DRAG").unwrap();
+            let at = gpui::point(drag.right() - px(120.), chrome.top() + px(4.));
+            assert!(
+                margin.contains(&at),
+                "{route:?}: top work-area margin is draggable"
+            );
+            page.visual.simulate_mouse_down(
+                at,
+                gpui::MouseButton::Left,
+                gpui::Modifiers::default(),
+            );
+            assert_eq!(
+                crate::platform_ui::take_titlebar_actions(),
+                [crate::platform_ui::TitlebarAction::Move],
+                "{route:?}: top margin"
+            );
+            page.visual
+                .simulate_mouse_up(at, gpui::MouseButton::Left, gpui::Modifiers::default());
+            page.visual.run_until_parked();
+            page.visual.simulate_event(gpui::MouseDownEvent {
+                position: at,
+                button: gpui::MouseButton::Left,
+                modifiers: gpui::Modifiers::default(),
+                click_count: 2,
+                first_mouse: false,
+            });
+            assert_eq!(
+                crate::platform_ui::take_titlebar_actions(),
+                [crate::platform_ui::TitlebarAction::Zoom],
+                "{route:?}: double-down zooms without requiring mouse-up"
+            );
+            page.visual
+                .simulate_mouse_up(at, gpui::MouseButton::Left, gpui::Modifiers::default());
+        }
     }
 }
 

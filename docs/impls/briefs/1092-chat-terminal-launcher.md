@@ -52,3 +52,11 @@ Jason authorized this `codex trio` mission (coder, reviewer, qa) with implementa
 Fold this brief and the spec into the commits; fold later fixes into the commit they correct and push with `git push --force-with-lease`. Rebase onto `origin/main` only when AGENTS.md requires it; never merge `main` into the branch. No tool-specific co-author trailers. The PR closes #1092, takes `frontend-only` if the diff stays in `runner-app`, keeps `core-review` if the workflow adds it, takes one risk label (expect `risk-high`), and lists the live checks run and those left to Jason.
 
 Stop at an open PR with green CI and report through Runner with the PR URL, final SHA, changes and validation. Do not merge, release, cut a nightly, archive the mission, delete branches or remove worktrees. When waiting, finish the turn and rely on the inbox notification; do not poll.
+
+## Authorized follow-ups — 2026-10-31
+
+Jason added #1093 to this mission as a separate `fix(ui)` commit: restore the six-dot pane drag grip before the runtime mark in split tabs, keep it in narrow headers, and let Runner own macOS titlebar dragging. Follow `target/design-ref/pane-drag-grip.png`; preserve drag previews and drop rules. Update the island spec, pane-moving guides in both languages, and WS-PANE-03. QA checks a top-row grip moves the pane without moving the window; empty island headers, the top margin, sidebar head and side-panel head still move the window; header double-click still zooms; single-pane tabs have no grip. Windows and Linux are left to Jason. The PR also closes #1093.
+
+Jason also authorized a separate `fix(ui)` commit making all terminal closes immediate: pane ×, the focused-terminal close shortcut, and sidebar terminal-tab close, locally and remotely, including a foreground command. Remove the obsolete terminal confirmation targets/strings and update tests and both-language guides. Chat archive confirmations and archive-all counts stay unchanged. QA closes a terminal running `sleep 100` by each entry point without a dialog and verifies that archiving a running chat still asks.
+
+Both follow-ups use the same frozen-snapshot code review, orchestrator go and QA gates. They add no agents or missions, and keep the open-PR/green-CI stopping point and all merge/release/cleanup prohibitions above.

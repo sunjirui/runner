@@ -5698,3 +5698,35 @@ fn remote_terminal_keyboard_copy_interrupt_and_paste_follow_platform_bindings() 
         b"remote paste"
     );
 }
+
+#[cfg(target_os = "macos")]
+#[test]
+fn remote_library_pages_keep_the_lower_titlebar_band_draggable() {
+    let _theme = crate::theme_snapshot::ThemeGuard::new();
+    let temp = tempfile::tempdir().unwrap();
+    let mut cx = TestAppContext::single();
+    let (store, fake, _) = fixture(&mut cx, temp.path());
+    enable_front_page(&fake);
+    let window = add_window(&mut cx, &store, temp.path(), "library-titlebar");
+    window.update(&mut cx, choose_host).unwrap();
+    cx.run_until_parked();
+    let mut visual = VisualTestContext::from_window(window.into(), &cx);
+    for item in [Item::Roles, Item::Crews] {
+        window
+            .update(&mut visual, |root, _, cx| {
+                root.select_remote_item(item.clone(), cx)
+            })
+            .unwrap();
+        visual.run_until_parked();
+        let drag = visual.debug_bounds("MAIN_TITLEBAR_DRAG").unwrap();
+        let chrome = visual.debug_bounds("APP_CHROME").unwrap();
+        let at = gpui::point(drag.right() - px(120.), chrome.top() + px(40.));
+        assert!(drag.contains(&at));
+        visual.simulate_mouse_down(at, MouseButton::Left, gpui::Modifiers::default());
+        window
+            .read_with(&visual, |root, _| assert!(root.titlebar_drag_armed))
+            .unwrap();
+        visual.simulate_mouse_up(at, MouseButton::Left, gpui::Modifiers::default());
+        visual.run_until_parked();
+    }
+}

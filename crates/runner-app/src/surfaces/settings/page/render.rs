@@ -146,7 +146,8 @@ impl NativeRoot {
                                 .top_0()
                                 .left_0()
                                 .right_0()
-                                .h(px(TITLEBAR_DRAG_HEIGHT * zoom)),
+                                .h(rems(WORKSPACE_HEADER_HEIGHT / 16.))
+                                .debug_selector(|| "SETTINGS_TITLEBAR_DRAG".into()),
                             cx,
                         ),
                         content,

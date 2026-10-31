@@ -148,6 +148,41 @@ pub(crate) fn navigation_left(window: &Window, zoom: f32) -> f32 {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum TitlebarAction {
+    Move,
+    Zoom,
+}
+
+#[cfg(test)]
+thread_local! {
+    static TITLEBAR_ACTIONS: std::cell::RefCell<Vec<TitlebarAction>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+#[cfg(test)]
+pub(crate) fn take_titlebar_actions() -> Vec<TitlebarAction> {
+    TITLEBAR_ACTIONS.with_borrow_mut(std::mem::take)
+}
+
+pub(crate) fn titlebar_mouse_down(event: &gpui::MouseDownEvent, window: &mut Window, cx: &mut App) {
+    cx.stop_propagation();
+    let action = if event.click_count == 2 {
+        TitlebarAction::Zoom
+    } else {
+        TitlebarAction::Move
+    };
+    #[cfg(test)]
+    {
+        let _ = window;
+        TITLEBAR_ACTIONS.with_borrow_mut(|actions| actions.push(action));
+    }
+    #[cfg(not(test))]
+    match action {
+        TitlebarAction::Zoom => window.titlebar_double_click(),
+        TitlebarAction::Move => window.start_window_move(),
+    }
+}
+
 impl NativeRoot {
     pub(crate) fn decorate_window(
         &self,
@@ -158,10 +193,42 @@ impl NativeRoot {
         root
     }
 
+    pub(crate) fn render_window_top_margin_drag_area(
+        &self,
+        cx: &mut Context<Self>,
+    ) -> Option<AnyElement> {
+        Some(
+            self.render_titlebar_drag_area(
+                "window-top-margin-drag",
+                div()
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .right_0()
+                    .h(rems(8. / 16.))
+                    .debug_selector(|| "WINDOW_TOP_MARGIN_DRAG".into()),
+                cx,
+            )
+            .into_any_element(),
+        )
+    }
+
     pub(crate) fn render_main_titlebar_drag_area(
         &self,
         cx: &mut Context<Self>,
     ) -> Option<AnyElement> {
+        let library = matches!(
+            self.remote_client.active_item(),
+            Some(
+                crate::surfaces::remote_client::RemoteItem::Roles
+                    | crate::surfaces::remote_client::RemoteItem::Crews
+            )
+        );
+        let height = if self.front_page_has_islands() && !library {
+            TITLEBAR_DRAG_HEIGHT
+        } else {
+            WORKSPACE_HEADER_HEIGHT
+        };
         Some(
             self.render_titlebar_drag_area(
                 "main-titlebar-drag",
@@ -170,7 +237,8 @@ impl NativeRoot {
                     .top_0()
                     .left_0()
                     .right_0()
-                    .h(px(TITLEBAR_DRAG_HEIGHT * self.settings(cx).app_zoom)),
+                    .h(px(height * self.settings(cx).app_zoom))
+                    .debug_selector(|| "MAIN_TITLEBAR_DRAG".into()),
                 cx,
             )
             .into_any_element(),

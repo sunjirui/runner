@@ -175,6 +175,8 @@ pub(crate) fn open_runner_window(
     let result = cx.open_window(
         WindowOptions {
             window_bounds: Some(bounds),
+            #[cfg(target_os = "macos")]
+            app_owns_titlebar_drag: true,
             window_min_size: Some(opening_window_minimum(&app_store.read(cx).settings)),
             #[cfg(target_os = "linux")]
             app_id: Some(platform_ui::DESKTOP_APP_ID.into()),
