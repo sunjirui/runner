@@ -522,7 +522,6 @@ pub(crate) fn fixture(
     });
     let clients = cx.new(|cx| model::ClientState::new(fake.client(), cx));
     store.update(cx, |store, _| {
-        store.settings.local_only = false;
         store.client = fake.client();
         store.remote_clients = clients.clone();
     });
@@ -731,15 +730,13 @@ fn follow_leases_share_subscription_and_pushes_stay_in_the_remote_model() {
     drop(two);
     cx.run_until_parked();
     assert_eq!(*fake.follows.lock().unwrap(), vec![("host".into(), true)]);
-    clients.update(&mut cx, |clients, cx| clients.set_enabled(false, cx));
+    fake.emit("remote/connection", serde_json::json!({"computer":"host","state":"reconnecting","error":"Remote channel: unknownDevice."}));
     cx.run_until_parked();
+    assert!(clients.read_with(&cx, |clients, _| clients.connection("host")) == Connection::Revoked);
     assert_eq!(
         *fake.follows.lock().unwrap(),
         vec![("host".into(), true), ("host".into(), false)]
     );
-    fake.emit("remote/connection", serde_json::json!({"computer":"host","state":"reconnecting","error":"Remote channel: unknownDevice."}));
-    cx.run_until_parked();
-    assert!(clients.read_with(&cx, |clients, _| clients.connection("host")) == Connection::Revoked);
     fake.emit(
         "remote/connection",
         serde_json::json!({"computer":"host","state":"disconnected"}),
@@ -1740,7 +1737,7 @@ fn remote_sidebar_uses_session_titles_for_unnamed_tabs_and_tracks_overview_updat
 }
 
 #[test]
-fn disabling_remote_access_returns_every_window_to_this_computer() {
+fn signing_out_returns_every_window_to_this_computer() {
     let _theme = crate::theme_snapshot::ThemeGuard::new();
     let temp = tempfile::tempdir().unwrap();
     let mut cx = TestAppContext::single();
@@ -1761,16 +1758,13 @@ fn disabling_remote_access_returns_every_window_to_this_computer() {
             .unwrap();
     }
     *fake.status.lock().unwrap() = RemoteStatus::default();
+    fake.emit(
+        "remote/status",
+        serde_json::to_value(RemoteStatus::default()).unwrap(),
+    );
     store.update(&mut cx, |store, cx| {
         store.remote_status = Some(RemoteStatus::default());
-        store.update_settings(
-            |settings| {
-                settings.local_only = true;
-                true
-            },
-            false,
-            cx,
-        );
+        cx.notify();
     });
     cx.run_until_parked();
     for window in [first, second] {
@@ -2112,7 +2106,7 @@ fn signed_in_picker_shows_attention_dots_and_never_counts() {
 }
 
 #[test]
-fn signed_out_has_no_picker_even_with_cached_directory_and_opens_account_from_avatar() {
+fn signed_out_has_no_picker_even_with_cached_directory_and_opens_account_from_settings() {
     let _theme = crate::theme_snapshot::ThemeGuard::new();
     for locale in [Locale::English, Locale::SimplifiedChinese] {
         with_locale(locale, || {
@@ -2154,11 +2148,11 @@ fn signed_out_has_no_picker_even_with_cached_directory_and_opens_account_from_av
                 assert!(visual.debug_bounds("COMPUTER_PICKER_ROW").is_none());
                 assert!(visual.debug_bounds("COMPUTER_PICKER_SIGN_IN").is_none());
                 assert_eq!(fake.directory_calls.load(Ordering::SeqCst), calls);
-                let avatar = visual.debug_bounds("SIDEBAR_ACCOUNT").unwrap();
-                visual.simulate_click(avatar.center(), Default::default());
-                visual.run_until_parked();
-                let sign_in = visual.debug_bounds("ACCOUNT_MENU_ITEM_1").unwrap();
-                visual.simulate_click(sign_in.center(), Default::default());
+                window
+                    .update(&mut visual, |root, window, cx| {
+                        root.enter_settings_route(Some("account"), window, cx)
+                    })
+                    .unwrap();
                 visual.run_until_parked();
                 assert!(visual.debug_bounds("ACCOUNT_STATUS_CARD").is_some());
                 assert_eq!(fake.enrolls.load(Ordering::SeqCst), 0);

@@ -217,9 +217,6 @@ impl RemoteClient {
         window: &mut Window,
         cx: &mut Context<NativeRoot>,
     ) -> bool {
-        if !self.app_store.read(cx).remote_access_enabled() {
-            return false;
-        }
         if let Some(remote) = self
             .workspace
             .as_mut()

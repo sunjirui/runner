@@ -198,7 +198,7 @@ const NAV_GROUPS: &[(&str, &[SettingsPane])] = &[
     ("ui.system", SYSTEM_PANES),
 ];
 
-fn filtered_nav_groups(query: &str, remote_access: bool) -> Vec<(&'static str, Vec<SettingsPane>)> {
+fn filtered_nav_groups(query: &str) -> Vec<(&'static str, Vec<SettingsPane>)> {
     let query = query.trim().to_lowercase();
     NAV_GROUPS
         .iter()
@@ -206,9 +206,6 @@ fn filtered_nav_groups(query: &str, remote_access: bool) -> Vec<(&'static str, V
             let panes = panes
                 .iter()
                 .copied()
-                .filter(|pane| {
-                    remote_access || !matches!(pane, SettingsPane::Account | SettingsPane::Remote)
-                })
                 .filter(|pane| query.is_empty() || pane.label().to_lowercase().contains(&query))
                 .collect::<Vec<_>>();
             (!panes.is_empty()).then_some((crate::i18n::text(label), panes))
@@ -729,13 +726,6 @@ impl NativeRoot {
             return;
         }
 
-        let pane = if matches!(pane, SettingsPane::Account | SettingsPane::Remote)
-            && !self.app_store.read(cx).remote_access_enabled()
-        {
-            SettingsPane::General
-        } else {
-            pane
-        };
         if self.settings_page.pane != pane {
             self.dismiss_remote_dialog();
         }
@@ -1681,7 +1671,7 @@ mod tests {
     #[test]
     fn nav_search_filters_labels_and_removes_empty_groups() {
         crate::i18n::testing::with_locale(crate::i18n::Locale::English, || {
-            let all = filtered_nav_groups("", true);
+            let all = filtered_nav_groups("");
             assert_eq!(all.len(), 3);
             assert_eq!(all.iter().map(|(_, panes)| panes.len()).sum::<usize>(), 15);
             assert_eq!(
@@ -1719,33 +1709,28 @@ mod tests {
             );
             assert_eq!(SettingsPane::from_route(Some("mcp")), SettingsPane::Mcp);
             assert_eq!(
-                filtered_nav_groups("mcp", true),
+                filtered_nav_groups("mcp"),
                 vec![("Integrations", vec![SettingsPane::Mcp])]
             );
             assert_eq!(
-                filtered_nav_groups("skills", true),
+                filtered_nav_groups("skills"),
                 vec![("Integrations", vec![SettingsPane::Skills])]
             );
 
-            let terminal = filtered_nav_groups("  TERM  ", true);
+            let terminal = filtered_nav_groups("  TERM  ");
             assert_eq!(terminal, vec![("App", vec![SettingsPane::Terminal])]);
 
-            let archived = filtered_nav_groups("archived", true);
+            let archived = filtered_nav_groups("archived");
             assert_eq!(archived, vec![("App", vec![SettingsPane::Archived])]);
-            assert!(filtered_nav_groups("no such setting", true).is_empty());
+            assert!(filtered_nav_groups("no such setting").is_empty());
             assert_eq!(
-                filtered_nav_groups("updates", true),
+                filtered_nav_groups("updates"),
                 vec![("System", vec![SettingsPane::Updates])]
             );
             assert_eq!(
                 SettingsPane::from_route(Some("updates")),
                 SettingsPane::Updates
             );
-            let local_only = filtered_nav_groups("", false);
-            assert!(!local_only
-                .iter()
-                .flat_map(|(_, panes)| panes)
-                .any(|pane| matches!(pane, SettingsPane::Account | SettingsPane::Remote)));
         });
     }
 

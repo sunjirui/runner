@@ -15,9 +15,9 @@ Use [Full smoke test procedure](../full-smoke-test.md) for authorization, candid
 | Quit, daemon lifetime, reconnect and recovery | [daemon.md](daemon.md) | 22 | 4 | 18 |
 | Agents, Claude accounts, settings, list preferences, language, notifications, skills, MCP, installation and updates | [settings.md](settings.md) | 49 | 4 | 45 |
 | Candidate CLI commands, output, feeds and connection | [cli.md](cli.md) | 13 | 4 | 9 |
-| Remote access: account, Local only, pairing, remote windows, terminals and missions | [remote.md](remote.md) | 46 | 6 | 40 |
+| Remote access: account, pairing, remote windows, terminals and missions | [remote.md](remote.md) | 45 | 6 | 39 |
 | Linux desktop, input, packages, updates, service and hosted remote acceptance | [linux.md](linux.md) | 7 | 0 | 7 |
-| **Total** | | **297** | **43** | **254** |
+| **Total** | | **296** | **43** | **253** |
 
 `regression/` holds this README and one table file per area, with feature sections. Historical feature records remain in `../archive/` and are never edited to turn their old result into a current result. New run results live separately at `docs/tests/runs/YYYY-MM-DD-<platform>.md`, where platform is `mac`, `win`, `linux` or `both`. Repeated runs on the same day append a separately identified candidate/attempt block to that file. No run record is needed merely to edit this suite.
 
