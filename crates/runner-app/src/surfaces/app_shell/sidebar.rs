@@ -394,7 +394,7 @@ impl NativeRoot {
                     .when(self.remote_client.is_local(), |footer| {
                         footer.child(div().flex_1())
                     })
-                    .child(self.render_account_avatar(cx)),
+                    .child(self.render_settings_button(cx)),
             );
         // The content keeps its full width while the wrapper animates, so the
         // transition clips instead of squashing every row; a squashed row
@@ -408,19 +408,11 @@ impl NativeRoot {
             .pb_3()
             .children(titlebar)
             .child(brand)
-            .when(
-                self.app_store.read(cx).remote_access_enabled()
-                    && self
-                        .app_store
-                        .read(cx)
-                        .remote_status
-                        .as_ref()
-                        .is_some_and(crate::surfaces::settings::remote::account::signed_in),
-                |sidebar| sidebar.child(self.remote_client.render_computer_trigger(cx)),
-            )
+            .when(self.app_store.read(cx).remote_signed_in(), |sidebar| {
+                sidebar.child(self.remote_client.render_computer_trigger(cx))
+            })
             .child(self.front_page_sidebar())
             .child(footer)
-            .children(self.render_account_menu(window, cx))
             .children(
                 (self.usage_open && show_usage)
                     .then(|| {

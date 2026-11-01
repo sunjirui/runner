@@ -28,7 +28,7 @@ use crate::*;
 
 use runner_app::ui::resize::{resize_strip, resize_strip_inset, ResizeAxis};
 
-pub(crate) mod account_menu;
+mod settings_button;
 
 pub(crate) const TITLEBAR_DRAG_HEIGHT: f32 = 28.;
 
@@ -1304,7 +1304,7 @@ mod tests {
     }
 
     #[test]
-    fn sidebar_footer_fits_three_weekly_values_and_avatar_in_one_row() {
+    fn sidebar_footer_fits_three_weekly_values_and_settings_in_one_row() {
         use crate::theme_snapshot::ThemeGuard;
         use gpui::{size, TestAppContext, VisualTestContext};
 
@@ -1322,7 +1322,6 @@ mod tests {
                     let temp = tempfile::tempdir().unwrap();
                     let mut cx = TestAppContext::single();
                     let store = crate::app_store::test_lifecycle_store(&mut cx, temp.path());
-                    store.update(&mut cx, |store, _| store.settings.local_only = false);
                     store.update(&mut cx, |store, _| {
                         store.settings.app_theme = if variant.is_light() {
                             theme::ThemeIntent::Light
@@ -1356,7 +1355,7 @@ mod tests {
 
                     let footer = visual.debug_bounds("SIDEBAR_FOOTER").unwrap();
                     let usage = visual.debug_bounds("SIDEBAR_USAGE").unwrap();
-                    let gear = visual.debug_bounds("SIDEBAR_ACCOUNT").unwrap();
+                    let gear = visual.debug_bounds("SIDEBAR_SETTINGS").unwrap();
                     let row = visual.debug_bounds("SIDEBAR_FOOTER_ROW").unwrap();
                     assert!((usage.size.height - px(32. * zoom)).abs() <= px(1.));
                     assert!((gear.size.width - px(32. * zoom)).abs() <= px(1.));
@@ -1394,18 +1393,18 @@ mod tests {
                     visual.simulate_mouse_move(usage.center(), None, gpui::Modifiers::default());
                     visual.run_until_parked();
                     assert_eq!(visual.debug_bounds("SIDEBAR_USAGE"), Some(usage));
-                    assert_eq!(visual.debug_bounds("SIDEBAR_ACCOUNT"), Some(gear));
+                    assert_eq!(visual.debug_bounds("SIDEBAR_SETTINGS"), Some(gear));
                     visual.simulate_mouse_move(gear.center(), None, gpui::Modifiers::default());
                     visual.run_until_parked();
                     assert_eq!(visual.debug_bounds("SIDEBAR_USAGE"), Some(usage));
-                    assert_eq!(visual.debug_bounds("SIDEBAR_ACCOUNT"), Some(gear));
+                    assert_eq!(visual.debug_bounds("SIDEBAR_SETTINGS"), Some(gear));
                 }
             }
         }
     }
 
     #[test]
-    fn sidebar_footer_opens_usage_and_account_menu_and_hides_usage_in_collapsed_preview() {
+    fn sidebar_footer_opens_usage_and_settings_and_hides_usage_in_collapsed_preview() {
         use crate::theme_snapshot::ThemeGuard;
         use gpui::{size, Modifiers, TestAppContext, VisualTestContext};
 
@@ -1413,7 +1412,6 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let mut cx = TestAppContext::single();
         let store = crate::app_store::test_lifecycle_store(&mut cx, temp.path());
-        store.update(&mut cx, |store, _| store.settings.local_only = false);
         let host = cx.add_window(|window, cx| {
             let mut root = NativeRoot::new(
                 "sidebar-footer-actions".into(),
@@ -1438,12 +1436,8 @@ mod tests {
         visual.simulate_click(usage.center(), Modifiers::default());
         visual.run_until_parked();
         assert!(visual.debug_bounds("USAGE_POPOVER_PANEL").is_none());
-        let gear = visual.debug_bounds("SIDEBAR_ACCOUNT").unwrap();
+        let gear = visual.debug_bounds("SIDEBAR_SETTINGS").unwrap();
         visual.simulate_click(gear.center(), Modifiers::default());
-        visual.run_until_parked();
-        assert!(visual.debug_bounds("ACCOUNT_MENU").is_some());
-        let settings = visual.debug_bounds("ACCOUNT_MENU_ITEM_0").unwrap();
-        visual.simulate_click(settings.center(), Modifiers::default());
         visual.run_until_parked();
         assert_eq!(
             host.read_with(&visual, |root, _| root.route.clone())
@@ -1459,7 +1453,7 @@ mod tests {
         .unwrap();
         visual.run_until_parked();
         assert!(visual.debug_bounds("SIDEBAR_USAGE").is_none());
-        assert!(visual.debug_bounds("SIDEBAR_ACCOUNT").is_some());
+        assert!(visual.debug_bounds("SIDEBAR_SETTINGS").is_some());
         host.update(&mut visual, |root, _, cx| {
             root.sidebar_collapsed = false;
             root.sidebar_preview_open = false;
@@ -1469,7 +1463,7 @@ mod tests {
         .unwrap();
         visual.run_until_parked();
         assert!(visual.debug_bounds("SIDEBAR_USAGE").is_none());
-        assert!(visual.debug_bounds("SIDEBAR_ACCOUNT").is_some());
+        assert!(visual.debug_bounds("SIDEBAR_SETTINGS").is_some());
     }
 
     struct SidebarHeaderProbe {

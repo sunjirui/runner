@@ -355,7 +355,6 @@ pub(crate) struct NativeRoot {
     pub(crate) settings_page: SettingsState,
     pub(crate) route: AppRoute,
     pub(crate) settings_return_route: AppRoute,
-    pub(crate) account_menu: surfaces::app_shell::account_menu::AccountMenuState,
     pub(crate) usage_open: bool,
     pub(crate) claude_account_picker: Option<Entity<runner_app::ui::select::StyledSelect>>,
     pub(crate) usage_anchor: Option<Bounds<Pixels>>,

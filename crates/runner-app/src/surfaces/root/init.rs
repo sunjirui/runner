@@ -311,7 +311,6 @@ impl NativeRoot {
             settings_page,
             route: initial_route.clone(),
             settings_return_route: initial_route,
-            account_menu: surfaces::app_shell::account_menu::AccountMenuState::new(cx),
             usage_open: false,
             claude_account_picker: None,
             usage_anchor: None,
@@ -355,7 +354,7 @@ impl NativeRoot {
                 cx.notify();
             }),
             _store_subscription: cx.observe_in(&app_store, window, |this, _, window, cx| {
-                this.sync_remote_access_visibility(window, cx);
+                this.leave_other_computers_when_signed_out(window, cx);
                 this.handle_app_store_update(cx);
             }),
         };

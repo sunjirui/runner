@@ -8,10 +8,7 @@ impl NativeRoot {
     ) -> AnyElement {
         let zoom = self.settings(cx).app_zoom;
         let width = self.settings(cx).sidebar_width * zoom;
-        let groups = filtered_nav_groups(
-            &self.settings_page.search_query,
-            self.app_store.read(cx).remote_access_enabled(),
-        );
+        let groups = filtered_nav_groups(&self.settings_page.search_query);
         let active = self.settings_page.pane;
         let nav = if groups.is_empty() {
             vec![div()

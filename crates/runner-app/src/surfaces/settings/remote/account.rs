@@ -178,7 +178,6 @@ impl NativeRoot {
             return;
         }
         self.settings_page.remote.reset_identity = false;
-        self.settings_page.remote.enable_local_only = false;
         self.settings_page.remote.confirm = true;
         cx.notify();
     }

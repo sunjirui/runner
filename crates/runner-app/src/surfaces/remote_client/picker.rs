@@ -164,14 +164,7 @@ impl RemoteClient {
             .into_any_element()
     }
     fn toggle_computer_picker(&mut self, window: &mut Window, cx: &mut Context<NativeRoot>) {
-        if !self.app_store.read(cx).remote_access_enabled()
-            || !self
-                .app_store
-                .read(cx)
-                .remote_status
-                .as_ref()
-                .is_some_and(crate::surfaces::settings::remote::account::signed_in)
-        {
+        if !self.app_store.read(cx).remote_signed_in() {
             return;
         }
         self.ui.picker_open = !self.ui.picker_open;
@@ -186,7 +179,7 @@ impl RemoteClient {
         window: &Window,
         cx: &mut Context<NativeRoot>,
     ) -> Option<AnyElement> {
-        if !self.ui.picker_open || !self.app_store.read(cx).remote_access_enabled() {
+        if !self.ui.picker_open {
             return None;
         }
         let anchor = self.ui.anchor?;

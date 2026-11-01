@@ -65,7 +65,6 @@ fn suspended_mission_test() -> (
     let mut cx = gpui::TestAppContext::single();
     let store = crate::app_store::test_lifecycle_store(&mut cx, temp.path());
     store.update(&mut cx, |store, _| {
-        store.settings.local_only = false;
         crate::app_store::seed_mixed_working_sessions(store)
     });
     let core = store.read_with(&cx, |store, _| store.test_core.clone());
@@ -102,12 +101,19 @@ fn suspended_mission_test() -> (
             temp.path().join("logs"),
             None,
             None,
-            store,
+            store.clone(),
             window,
             cx,
         )
     });
     cx.simulate_window_resize(host.into(), size(px(1440.), px(900.)));
+    cx.run_until_parked();
+    store.update(&mut cx, |store, _| {
+        store.remote_status = Some(runner_core::remote::RemoteStatus {
+            state: runner_core::remote::RemoteState::Paused,
+            ..Default::default()
+        });
+    });
     (temp, cx, host, fake)
 }
 

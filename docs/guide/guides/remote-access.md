@@ -4,30 +4,24 @@ Connect this computer to your account so Runner on your other computers can reac
 
 Request an invite code in the [Runner Discord](https://discord.gg/6BrfZdHKNf) or the WeChat user group. **Settings → Remote access** and **Settings → About** provide both links. The WeChat link opens the [README’s Community section](https://github.com/yicheng47/runner#community) for the current group QR code.
 
-## Local only
-
-**Settings → General → Remote access → Local only**, immediately above the Sessions section, keeps Runner on this computer alone. It is off by default, so Account and Remote access are available in Settings and the account avatar appears in the footer. The computer picker appears once this computer is signed in; signed out, use Account, Remote access or the avatar’s Sign in menu instead.
-
-Turning Local only on hides Account, Remote access, the avatar and the computer picker, restores the Settings gear, and stops access from other computers. If signed in, Runner asks for Sign out confirmation first and enables Local only after successful sign-out. Cancel or failure leaves it off. A pending sign-in approval is cancelled when you enable it while signed out. Identity, PIN and pairings are kept. Remote windows return to this computer, remote and account menus/dialogs close, and attention follows are released. Turn Local only off to restore the surfaces without starting sign-in. The choice is saved and applies to every window.
-
-A signed-in status, including after `runner remote login`, overrides Local only and shows the remote surfaces until sign-out. Signing out or Reset never changes your Local only preference. Settings → Remote access has no separate switch for showing these features.
+Remote access is optional. Signed out, Runner works on this computer alone: nothing on it can be reached from another computer, and the sidebar has no computer picker.
 
 ## Sign in from Runner
 
-1. With **Settings → General → Local only** off, open **Settings → Account** and choose **Sign in**, or open **Settings → Remote access** and choose **Sign in to Runner** under **Through Runner’s relay**.
+1. Open **Settings → Account** and choose **Sign in**, or open **Settings → Remote access** and choose **Sign in to Runner** under **Through Runner’s relay**.
 2. Runner shows a short code, a fingerprint and the time left, and opens the approval page in your browser. You can also copy the link or open the short link on another device and enter the code.
 3. Sign in, check that the page shows the same fingerprint as Runner, name this computer and approve it.
 4. Account shows your account, service, this computer and its fingerprint. If you started from Remote access, that pane shows the relay page once approval completes. If this computer has no PIN, Runner opens **Set PIN** in the Settings window where you started sign-in. Choose and confirm a six-digit PIN so your other computers can pair with it.
 
-With Local only off, the round avatar in the sidebar footer shows your account’s initial when signed in and a person icon otherwise. Its menu opens Account, Settings and **Sign out…**. Signed out, it offers Settings and **Sign in…**, which opens Account, where you can start approval. Account shows its status card and **Sign out on this computer** when signed in.
+When signed in, Account shows its status card and **Sign out on this computer**.
 
 If Runner cannot reach the service, it tries for up to 30 seconds, then returns to Not signed in with an error. Check the service address and your network, then choose **Sign in** again. While sign-in is starting, **Cancel** immediately restores the button. You can retry in the same window or another Runner window; the abandoned attempt does not open a browser or clear the newer enrollment.
 
 ## Through Runner’s relay
 
-With Local only off, Remote access opens directly on the relay’s sign-in state while signed out. Runner’s relay is the only route in this release; Tailscale is planned separately.
+While signed out, Remote access opens directly on the relay’s sign-in state. Runner’s relay is the only route in this release; Tailscale is planned separately.
 
-The relay page shows the connection, **Allow remote access**, the PIN and paired computers. Its Route section identifies the relay and links to Account. **Reset remote access** makes a new identity, unpairs every computer, clears the PIN and signs out. Your Local only preference stays unchanged.
+The relay page shows the connection, **Allow remote access**, the PIN and paired computers. Its Route section identifies the relay and links to Account. **Reset remote access** makes a new identity, unpairs every computer, clears the PIN and signs out.
 
 While no PIN is set and PIN entry is unlocked, a **Finish setup: set a PIN** row appears below the connection header, with **Set PIN** in place of the Pairing section’s PIN row. Canceling the PIN dialog keeps this row available, including while paused or reconnecting. After saving a PIN, the setup row disappears and the PIN row offers **Change PIN**.
 
@@ -70,9 +64,9 @@ Sign both computers in to the same account. On the computer you want to reach, e
 
 If a computer is listed offline, pairing opens **{computer} is offline** without a PIN field. Check that it is awake, signed in, and has **Allow remote access** on, then choose **Try again** to refresh the listing. PIN entry appears when it is online. If the computer goes offline after you enter its PIN, Runner keeps the PIN hidden in the offline dialog; **Try again** submits it once. A timeout, relay failure or other pairing failure also keeps the PIN, with **Try again** to submit it once more. You can edit the PIN after these failures; a wrong PIN clears it. A listing refresh never submits a PIN automatically.
 
-The picker lists this computer and the account’s other computers, including offline and unpaired ones. Each remote row shows online or offline status first, including when it was last seen when available; an unpaired computer adds **Not paired**, such as **Online · Not paired**. A green dot on a remote row means a session there needs input or approval, or a mission has a question. The trigger’s dot means another paired computer needs you. Dots carry no count, and unread output alone does not light them. Runner follows online paired computers while signed in and Local only is off, sharing the follow with open windows. Offline, unpaired and locked computers have no attention follow. Click a computer to switch this window; hold Shift while clicking, or use its window button, to open another window. Choose this computer to return to your local tabs and panes. A local mission keeps its layout and selection; its terminals resume and its feed catches up when you return. Each window chooses independently, and every window opens on this computer after restarting Runner. Your local notification settings continue to apply while a remote window is active; clicking a local chat or mission alert returns a window to this computer and opens that item.
+The picker lists this computer and the account’s other computers, including offline and unpaired ones. Each remote row shows online or offline status first, including when it was last seen when available; an unpaired computer adds **Not paired**, such as **Online · Not paired**. A green dot on a remote row means a session there needs input or approval, or a mission has a question. The trigger’s dot means another paired computer needs you. Dots carry no count, and unread output alone does not light them. Runner follows online paired computers while signed in, sharing the follow with open windows. Offline, unpaired and locked computers have no attention follow. Click a computer to switch this window; hold Shift while clicking, or use its window button, to open another window. Choose this computer to return to your local tabs and panes. A local mission keeps its layout and selection; its terminals resume and its feed catches up when you return. Each window chooses independently, and every window opens on this computer after restarting Runner. Your local notification settings continue to apply while a remote window is active; clicking a local chat or mission alert returns a window to this computer and opens that item.
 
-Signed out, there is no computer picker: use **Settings → Account**, **Settings → Remote access** or the avatar’s **Sign in…** menu. Runner does not fetch the account directory or expose cached computers and directory errors while signed out. Once signed in, Tab and Shift-Tab move through the picker’s controls; moving past either end closes it, and Escape closes it from an internal control.
+Signed out, there is no computer picker: sign in from **Settings → Account** or **Settings → Remote access**. Runner does not fetch the account directory or expose cached computers and directory errors while signed out. Once signed in, Tab and Shift-Tab move through the picker’s controls; moving past either end closes it, and Escape closes it from an internal control.
 
 If the computer list cannot refresh while signed in, the picker shows a warning below its available rows. Check Account and your connection, then reopen the picker to try again.
 
@@ -100,7 +94,7 @@ The sidebar footer shows the computer’s encrypted relay connection. During rec
 
 Turn off **Allow remote access** to close the connection while keeping this computer on the account. The web panel shows it offline. Turn the switch on to reconnect with the same key and fingerprint.
 
-**Sign out on this computer** in Account, **Sign out…** in the avatar menu, or `runner remote logout`, deletes this computer's enrollment credential first and asks the service to remove it once. If the service cannot be reached, Runner reports that the computer is still listed offline; remove that entry in the web panel. Runner asks for confirmation before signing out in the app. Restarting Runner does not reconnect a signed-out computer. Signing in again needs a new code and keeps the same identity key and fingerprint, PIN and paired devices.
+**Sign out on this computer** in Account, or `runner remote logout`, deletes this computer's enrollment credential first and asks the service to remove it once. If the service cannot be reached, Runner reports that the computer is still listed offline; remove that entry in the web panel. Runner asks for confirmation before signing out in the app. Restarting Runner does not reconnect a signed-out computer. Signing in again needs a new code and keeps the same identity key and fingerprint, PIN and paired devices. Signing out returns any window showing another computer to this one.
 
 If the computer was removed in the web panel or the account was deactivated, Runner stops the connection. Account shows the reason even when an old enrollment remains; Remote access returns to relay sign-in. **Try again** uses the existing credential, which can work after an administrator reactivates the account. **Sign in again** clears the old enrollment and starts fresh. Other stop reasons explain whether to retry, approve a new code or update Runner.
 
@@ -118,7 +112,7 @@ Five failed pairing confirmations in a row lock PIN entry. A wrong PIN and a dam
 
 Runner shows **{computer} paired** as a system notification when another computer pairs. Clicking it opens **Settings → Remote access**. Linux also shows the in-app toast because it cannot query desktop notification delivery. If system notifications are unavailable or off, an in-app toast says that the computer can now reach this one and offers **Open Remote access**. A reconnection does not raise another pairing notification.
 
-If you suspect this computer’s identity key has leaked, choose **Reset remote access**, or run `runner remote reset-identity` in your own interactive terminal. Confirming disconnects the computer from the account, creates a new key and fingerprint, clears the PIN and all paired devices, and unlocks PIN entry. With Local only off, the pane returns to relay sign-in; with a saved Local only preference on, Settings returns to General. Signing in again needs a new code. Your agents and sessions keep running.
+If you suspect this computer’s identity key has leaked, choose **Reset remote access**, or run `runner remote reset-identity` in your own interactive terminal. Confirming disconnects the computer from the account, creates a new key and fingerprint, clears the PIN and all paired devices, and unlocks PIN entry. The pane returns to relay sign-in. Signing in again needs a new code. Your agents and sessions keep running.
 
 
 ## Take a terminal back

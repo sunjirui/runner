@@ -154,7 +154,6 @@ pub(crate) struct ClientState {
     pub(super) pair_epochs: HashMap<String, u64>,
     signed_in: Option<bool>,
     attention_follows: HashMap<String, Follow>,
-    enabled: bool,
     commands: mpsc::UnboundedSender<Command>,
     _tasks: Vec<gpui::Task<()>>,
 }
@@ -239,7 +238,6 @@ impl ClientState {
             pair_epochs: HashMap::new(),
             signed_in: None,
             attention_follows: HashMap::new(),
-            enabled: true,
             commands,
             _tasks: vec![event_task, command_task, response_task],
         }
@@ -424,21 +422,12 @@ impl ClientState {
                         .unwrap_or_default()
         })
     }
-    pub(crate) fn set_enabled(&mut self, enabled: bool, cx: &mut Context<Self>) {
-        if self.enabled != enabled {
-            self.enabled = enabled;
-            self.sync_attention_follows();
-            cx.notify();
-        }
-    }
-
     fn sync_attention_follows(&mut self) {
         let desired = self
             .computers
             .iter()
             .filter(|computer| {
-                self.enabled
-                    && self.signed_in == Some(true)
+                self.signed_in == Some(true)
                     && !computer.is_self
                     && computer.online
                     && computer.paired
@@ -499,7 +488,6 @@ impl ClientState {
                     self.send(Command::Refresh);
                 }
                 self.signed_in = Some(signed_in);
-                self.enabled = signed_in;
                 if !signed_in {
                     self.loads.clear();
                     for (_, access) in self.capabilities.drain() {

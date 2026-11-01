@@ -242,7 +242,6 @@ impl NativeRoot {
                     )
                     .into_any_element(),
             ]))
-            .child(self.render_local_only_setting(cx))
             .child(
                 div().flex().flex_col().gap_2()
                     .child(settings_section_heading(crate::i18n::text("ui.sessions")))
